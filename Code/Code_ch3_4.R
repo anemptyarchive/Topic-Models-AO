@@ -108,7 +108,7 @@ for(i in 1:Iter) {
   alpha_k <- new_alpha_k
   beta_kv <- new_beta_kv
   
-  # 初期値を代入
+  # 推移の確認用に推定値を保存
   trace_alpha[, i + 1]  <- alpha_k
   trace_beta[, , i + 1] <- beta_kv
 }
@@ -206,91 +206,98 @@ ggplot(phi_df_long, aes(x = word,  y = prob, fill = word, color = word)) +
        subtitle = "Variational Bayesian Estimation") # ラベル
 
 
-# 推移の確認 -------------------------------------------------------------------
-
+# 更新値の推移の確認 -------------------------------------------------------------------
 
 ## トピック分布のパラメータ
 # データフレームを作成
-trace_alpha_df_wide <- cbind(t(trace_alpha), 
-                             1:ncol(trace_alpha)) %>% 
-                       as.data.frame()
+trace_alpha_df_wide <- cbind(
+  as.data.frame(trace_alpha), 
+  topic = as.factor(1:K)
+)
 
 # データフレームをlong型に変換
-colnames(trace_alpha_df_wide) <- c(1:K, "n") # key用の行名を付与
-trace_alpha_df_long <- gather(trace_alpha_df_wide, key = "topic", value = "alpha", -n) # 変換
+trace_alpha_df_long <- pivot_longer(
+  trace_alpha_df_wide, 
+  cols = -topic, # 変換せずにそのまま残す現列名
+  names_to = "Iteration", # 現列名を格納する新しい列の名前
+  names_prefix = "i=", # 現列名から取り除く文字列
+  names_ptypes = list(Iteration = numeric()), # 現列名を要素とする際の型
+  values_to = "value" # 現要素を格納する新しい列の名前
+)
 
-# 描画
-ggplot(data = trace_alpha_df_long, mapping = aes(x = n, y = alpha, color = topic)) + 
-  geom_line() +                                       # 棒グラフ
-labs(title = "Mixture of Unigram Models:VBE:(alpha)") # タイトル
+# 作図
+ggplot(trace_alpha_df_long, aes(x = Iteration, y = value, color = topic)) + 
+  geom_line() + # 棒グラフ
+  labs(title = "Mixture of Unigram Models", 
+       subtitle = "Variational Bayesian Estimation") # ラベル
 
+
+## 単語分布
+# 確認するトピック番号を指定
+TopicNum <- 1
+
+# 作図用のデータフレームを作成
+trace_beta_df_wide <- cbind(
+  as.data.frame(trace_beta[TopicNum, , ]), 
+  word = as.factor(1:V)
+)
+
+# データフレームをlong型に変換
+trace_beta_df_long <- pivot_longer(
+  trace_beta_df_wide, 
+  cols = -word, # 変換せずにそのまま残す現列名
+  names_to = "Iteration", # 現列名を格納する新しい列の名前
+  names_prefix = "i=", # 現列名から取り除く文字列
+  names_ptypes = list(Iteration = numeric()), # 現列名を要素とする際の型
+  values_to = "value" # 現要素を格納する新しい列の名前
+)
+
+# 作図
+ggplot(trace_beta_df_long, aes(x = Iteration, y = value, color = word)) + 
+  geom_line(alpha = 0.5) + # 折れ線グラフ
+  theme(legend.position = "none") + # 凡例
+  labs(title = "Mixture of Unigram Models", 
+       subtitle = "Variational Bayesian Estimation") # ラベル
+
+
+
+# 更新値の推移を確認：gif画像 ---------------------------------------------------------
 
 ## 単語分布のパラメータ
-# データフレームを作成
-trace_beta_df_wide <- cbind(t(trace_beta), 
-                             1:ncol(trace_beta)) %>% 
-                      as.data.frame()
-
-# データフレームをlong型に変換
-colnames(trace_beta_df_wide) <- c(1:V, "n") # key用の行名を付与
-trace_beta_df_long <- gather(trace_beta_df_wide, key = "word", value = "beta", -n) # 変換
-trace_beta_df_long$word <- trace_beta_df_long$word %>%  # 文字列になるため因子に変換
-                           as.numeric() %>% 
-                           as.factor()
-
-# 描画
-ggplot(data = trace_beta_df_long, mapping = aes(x = n, y = beta, color = word)) + 
-  geom_line() +                                        # 棒グラフ
-  theme(legend.position = "none") +                    # 凡例
-  labs(title = "Mixture of Unigram Models:VBE:(beta)") # タイトル
-
-
-# 各トピックの出現確率の上位語 ---------------------------------------------------------------------
-
-
-# 文書インデックス(d)
-d_index <- list.files(file_path) %>% 
-           str_remove_all(".txt")
-
-## 語彙インデックス(v)
-# 指定した出現回数以上の単語の行番号
-num <- mecab_df %>% 
-       select(-c(TERM, POS1, POS2)) %>% 
-       apply(1, sum) >= 5 # 抽出する総出現回数を指定する
-
-v_index <- mecab_df[num, ] %>% 
-           filter(grepl("名詞|形容詞", POS1)) %>%  # 抽出する品詞を指定する|^動詞
-           filter(grepl("一般|^自立", POS2)) %>% 
-           filter(!grepl(stop_words, TERM)) %>% 
-           .[, 1]  # 単語の列を抽出する
-
-# データフレームを作成
-phi_df_wide2 <- cbind(as.data.frame(t(phi_kv)), 
-                      v_index) %>% 
-                as.data.frame()
-colnames(phi_df_wide2) <- c(paste0("topic", 1:K), "word") # key用の行名を付与
-
-# データフレームの整形
-phi_df_long2 <- data.frame()
-for(i in 1:K) {
-  tmp_df <- phi_df_wide2 %>% 
-    select(paste0("topic", i), word) %>%  # 
-    arrange(-.[, 1]) %>%  # 降順に並べ替え
-    head(20) %>%          # 任意で指定した上位n語を抽出
-    gather(key = "topic", value = "prob", -word) # long型に変換
-  
-  phi_df_long2 <- rbind(phi_df_long2, tmp_df)
+# 作図用のデータフレームを作成
+trace_beta_df_wide <- data.frame()
+for(i in 1:(Iter + 1)) {
+  # データフレームに変換
+  tmp_beta_df <- cbind(
+    as.data.frame(trace_beta[, , i]), 
+    topic = as.factor(1:K), # トピック番号
+    Iteration = i - 1 # 試行回数
+  )
+  # データフレームを結合
+  trace_beta_df_wide <- rbind(trace_beta_df_wide, tmp_beta_df)
 }
 
+# データフレームをlong型に変換
+trace_beta_df_long <- pivot_longer(
+  trace_beta_df_wide, 
+  cols = -c(topic, Iteration), # 変換せずにそのまま残す現列名
+  names_to = "word", # 現列名を格納する新しい列の名前
+  names_prefix = "v=", # 現列名から取り除く文字列
+  names_ptypes = list(word = factor()), # 現列名を要素とする際の型
+  values_to = "value" # 現要素を格納する新しい列の名前
+)
 
-# 描画
-ggplot(data = phi_df_long2, 
-       mapping = aes(x = reorder(x = word, X = prob), y = prob, fill = word)) +  # データ
+# 作図
+graph_beta <- ggplot(trace_beta_df_long, aes(x = word, y = value, fill = word, color = word)) + 
   geom_bar(stat = "identity", position = "dodge") + # 棒グラフ
-  coord_flip() +                                    # グラフの向き
-  facet_wrap( ~ topic, scales = "free") +           # グラフの分割
-  theme(legend.position = "none") +                 # 凡例
-  labs(title = "Mixture of Unigram Models:VBE")     # タイトル
+  facet_wrap( ~ topic, labeller = label_both) + # グラフの分割
+  scale_x_discrete(breaks = seq(0, V, by = 10)) + # x軸目盛
+  theme(legend.position = "none") + # 凡例
+  transition_manual(Iteration) + # フレーム
+  labs(title = "Mixture of Unigram Models:VBE", 
+       subtitle = "i={current_frame}") # ラベル
 
+# gif画像を作成
+animate(graph_beta, nframes = Iter + 1, fps = 5)
 
 
