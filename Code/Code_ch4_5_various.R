@@ -1,65 +1,48 @@
 
-# Chapter4.5 LDA:ギブスサンプリング(多様) ------------------------------------------------------------
+# 4.5 LDA：ギブスサンプリング(多様) ------------------------------------------------------------
 
-library(RMeCab)
+# 利用パッケージ
 library(tidyverse)
 
-
-# テキスト処理 ---------------------------------------------------------------------
-
-# 形態素解析
-mecab_df <- docDF("text_data/lyrics_mor_single", type = 1) # テキストファイルの保存先を指定する
-
-
-# 文書dの語彙vの出現回数：N_dv
-N_dv <- mecab_df %>% 
-  filter(grepl("名詞|^動詞|形容詞", POS1)) %>%  # 抽出する品詞を指定する
-  filter(grepl("一般|^自立", POS2)) %>% 
-  select(-c(TERM, POS1, POS2)) %>% 
-  filter(apply(., 1, sum) >= 15) %>%           # 抽出する総出現回数を指定する
-  t()
-
-# 確認用の行列名
-dimnames(N_dv) <- list(paste("d=", 1:nrow(N_dv), sep = ""), 
-                       paste("v=", 1:ncol(N_dv), sep = ""))
-
-# 文書dの単語数：N_d
-N_d <- apply(N_dv, 1, sum)
-
-
-# 文書数：D
-D <- nrow(N_dv)
-
-# 総語彙数：V
-V <- ncol(N_dv)
+## 簡易文書データ
+# 文書数
+D <- 10
+# 語彙数
+V <- 20
+# 各文書における各語彙数
+N_dv <- matrix(sample(0:10, D * V, replace = TRUE), D, V)
 
 
 # パラメータの初期設定 ----------------------------------------------------------------------
 
-# トピック数：K
-K <- 4 # 任意の値を指定する
+# トピック数(K)を指定
+K <- 4
 
-
-# ハイパーパラメータ(alpha, beta)
-alpha_k <- rep(2, K) # 任意の値を指定する
-beta_v  <- rep(2, V) # 任意の値を指定する
-
+# ハイパーパラメータ(alpha, beta)を指定
+alpha_k <- rep(2, K)
+beta_v  <- rep(2, V)
 
 # 文書dの語彙vに割り当てられたトピック：z_dnの初期化
-z_dn <- array(rep(0, D * V * max(N_dv)), dim = c(D, V, max(N_dv)), 
-              dimnames = list(paste0("d=", 1:D), 
-                              paste0("v=", 1:V), 
-                              paste0("N_dv=", 1:max(N_dv))))
+z_dn <- array(
+  0, dim = c(D, V, max(N_dv)), 
+  dimnames = list(paste0("d=", 1:D), 
+                  paste0("v=", 1:V), 
+                  paste0("N_dv=", 1:max(N_dv)))
+)
 
 # 文書dにおいてトピックkが割り当てられた単語数：N_dkの初期化
-N_dk <- matrix(rep(0, D * K), nrow = D, ncol = K, 
-               dimnames = list(paste0("d=", 1:D), 
-                               paste0("k=", 1:K)))
+N_dk <- matrix(
+  0, nrow = D, ncol = K, 
+  dimnames = list(paste0("d=", 1:D), # 行名
+                  paste0("k=", 1:K)) # 列名
+)
 
 # トピックkが割り当てられた語彙vの出現回数：N_kvの初期化
-N_kv <- matrix(rep(0, K * V), nrow = K, ncol = V, 
-               dimnames = list(paste0("k=", 1:K), 
-                               paste0("v=", 1:V)))
+N_kv <- matrix(
+  0, nrow = K, ncol = V, 
+  dimnames = list(paste0("k=", 1:K), # 行名
+                  paste0("v=", 1:V)) # 列名
+)
 
 # 全文書でトピックkが割り当てられた単語数：N_kの初期化
 N_k <- rep(0, K)
@@ -67,15 +50,23 @@ N_k <- rep(0, K)
 
 # ギブスサンプリング ---------------------------------------------------------------
 
+# 試行回数(サンプリング数)
+Iter <- 1000
+
 # 受け皿の用意
-p <- NULL
+p_z_k <- NULL
 
 # 結果の確認用
-trace_alpha <- as.matrix(alpha_k)
-trace_beta  <- as.matrix(beta_v)
-trace_N_k <- as.matrix(N_k)
+trace_alpha <- matrix(0, nrow = K, ncol = Iter + 1)
+trace_beta  <- matrix(0, nrow = V, ncol = Iter + 1)
+# 初期値を代入
+trace_alpha[, 1] <- alpha_k
+trace_beta[, 1]  <- beta_v
 
-for(i in 1:1000) {
+for(i in 1:Iter) {
+  
+  # 動作確認用
+  start_time <- Sys.time()
   
   ## 新たに割当られたトピックに関するカウントを初期化
   new_N_dk <- matrix(rep(0, D * K), nrow = D, ncol = K, 
@@ -114,11 +105,12 @@ for(i in 1:1000) {
             tmp_p_alpha      <- tmp_N_dk[d, k] + alpha_k[k]
             tmp_p_beta_numer <- tmp_N_kv[k, v] + beta_v[v]
             tmp_p_beta_denom <- tmp_N_k[k] + sum(beta_v)
-            p[k] <- tmp_p_alpha * tmp_p_beta_numer / tmp_p_beta_denom
+            p_z_k[k] <- tmp_p_alpha * tmp_p_beta_numer / tmp_p_beta_denom
+            
           }
           
           # サンプリング
-          tmp_z_dn   <- rmultinom(n = 1, size = 1:K, prob = p)
+          tmp_z_dn   <- rmultinom(n = 1, size = 1:K, prob = p_z_k)
           z_dn[d, v, ndv] <- which(tmp_z_dn == 1)
           
           # 新たに与えられたトピックを`k`に代入
@@ -154,113 +146,222 @@ for(i in 1:1000) {
   beta_v <- beta_v * (tmp_beta_numer1 - tmp_beta_numer2) / (tmp_beta_denom1 - tmp_beta_denom2)
   
   # 結果の確認用
-  trace_alpha <- cbind(trace_alpha, as.matrix(alpha_k))
-  trace_beta  <- cbind(trace_beta, as.matrix(beta_v))
-  trace_N_k   <- cbind(trace_N_k, as.matrix(N_k))
+  trace_alpha[, i + 1] <- alpha_k
+  trace_beta[, i + 1]  <- beta_v
   
-  # 動作確認用
-  print(paste0(i, "th try..."))
+  # 動作確認
+  print(paste0(i, "th try...", round(Sys.time() - start_time, 2)))
 }
-
-
-# 推定結果の推移の確認 --------------------------------------------------------------
-
-
-## トピック分布の推移の確認
-# データフレームを作成
-alpha_df_wide <- cbind(as.data.frame(t(trace_alpha)), 
-                       as.factor(1:ncol(trace_alpha)))
-
-# データフレームをlong型に変換
-colnames(alpha_df_wide) <- c(1:K, "n") # key用の行名を付与
-alpha_df_long <- gather(alpha_df_wide, 
-                        key = "topic", value = "alpha", -n) # 変換
-alpha_df_long$n <- as.numeric(alpha_df_long$n) # 文字列になるので数値に変換
-
-# 描画
-ggplot(alpha_df_long, aes(n, alpha, color = topic)) +  # データ
-  geom_line() +                      # 折れ線グラフ
-  labs(title = "LDA:Gibbs Sampling") # タイトル
-
-
-## 単語分布のパラメータの推移の確認
-# データフレームを作成
-beta_df_wide <- cbind(as.data.frame(t(trace_beta)), 
-                      as.factor(1:ncol(trace_beta))) # 推定回数
-
-# データフレームをlong型に変換
-colnames(beta_df_wide) <- c(1:V, "n") # key用の行名を付与
-beta_df_long <- gather(beta_df_wide, 
-                       key = "topic", value = "beta", -n) # 変換
-beta_df_long$n <- as.numeric(beta_df_long$n) # 文字列になるので数値に変換
-
-# 描画
-ggplot(data = beta_df_long, mapping = aes(x = n, y = beta, color = topic)) +  # データ
-  geom_line(alpha = 0.5) +           # 折れ線グラフ
-  theme(legend.position = "none") +  # 凡例
-  labs(title = "LDA:Gibbs Sampling") # タイトル
-
-
-# 推定結果の確認 -----------------------------------------------------------------
-
-
-## トピック分布のパラメータの推定結果の確認
-# データフレームを作成
-alpha_df <- data.frame(topic = as.factor(1:K), 
-                       alpha = alpha_k)
-
-# 描画
-ggplot(data = alpha_df, mapping = aes(x = topic, y = alpha, fill = topic)) + # データ
-  geom_bar(stat = "identity", position = "dodge") +  # 棒グラフ
-  labs(title = "LDA:Gibbs Sampling")                 # タイトル
-
-
-## 単語分布のパラメータの推定結果の確認
-# データフレームを作成
-beta_df <- data.frame(word = as.factor(1:V), 
-                      beta = beta_v)
-
-# 描画
-ggplot(data = beta_df, mapping = aes(x = word, y = beta, fill = word)) +  # データ
-  geom_bar(stat = "identity", position = "dodge") + # 棒グラフ
-  theme(legend.position = "none") +                 # 凡例
-  labs(title = "LDA:Gibbs Sampling")                # タイトル
-
 
 
 # パラメータの推定結果(平均値)の確認 ------------------------------------------------------------
 
+## トピック分布(平均値)
+# パラメータの平均値を計算:式(1.15)
+theta_k <- alpha_k / sum(alpha_k)
 
-## トピック分布の推定結果(平均値)の確認
-# データフレームを作成
-theta_df <- data.frame(topic = as.factor(1:K), 
-                       prob = alpha_k / sum(alpha_k))
+# 作図用のデータフレームを作成
+theta_df <- data.frame(
+  topic = as.factor(1:K), 
+  prob = theta_k
+)
 
-# 描画
-ggplot(data = theta_df, mapping = aes(x = topic, y = prob, fill = topic)) + # データ
+# 作図
+ggplot(theta_df, aes(x = topic, y = prob, fill = topic)) + 
   geom_bar(stat = "identity", position = "dodge") +  # 棒グラフ
-  labs(title = "LDA:Gibbs Sampling")                 # タイトル
+  labs(title = "LDA:Gibbs Sampling", 
+       subtitle = expression(theta)) # ラベル
 
 
 ## 単語分布の推定結果(平均値)の確認
-# データフレームを作成
-phi_df <- data.frame(word = as.factor(1:V), 
-                     prob = beta_v / sum(beta_v))
+# パラメータの平均値を計算:式(1.15)
+phi_v <- beta_v / sum(beta_v)
+
+# 作図用のデータフレームを作成
+phi_df <- data.frame(
+  word = as.factor(1:V), 
+  prob = phi_v
+)
+
+# 作図
+ggplot(phi_df, aes(x = word, y = prob, fill = word, color = word)) + 
+  geom_bar(stat = "identity", position = "dodge") + # 棒グラフ
+  scale_x_discrete(breaks = seq(0, V, by = 10)) + # x軸目盛
+  theme(legend.position = "none") + # 凡例
+  labs(title = "LDA:Gibbs Sampling", 
+       subtitle = expression(phi)) # ラベル
+
+
+# 推定結果の確認 -----------------------------------------------------------------
+
+## トピック分布のパラメータ(alpha)
+# 作図用のデータフレームを作成
+alpha_df <- data.frame(
+  topic = as.factor(1:K), 
+  value = alpha_k
+)
+
+# 作図
+ggplot(alpha_df, aes(x = topic, y = value, fill = topic)) + 
+  geom_bar(stat = "identity", position = "dodge") +  # 棒グラフ
+  labs(title = "LDA:Gibbs Sampling", 
+       subtitle = expression(alpha)) # ラベル
+
+
+## 単語分布のパラメータ(beta)
+# 作図用のデータフレームを作成
+beta_df <- data.frame(
+  word = as.factor(1:V), 
+  value = beta_v
+)
 
 # 描画
-ggplot(data = phi_df, mapping = aes(x = word, y = prob, fill = word)) +  # データ
+ggplot(beta_df, aes(x = word, y = value, fill = word, color = word)) + 
   geom_bar(stat = "identity", position = "dodge") + # 棒グラフ
-  theme(legend.position = "none") +                 # 凡例
-  labs(title = "LDA:Gibbs Sampling")                # タイトル
+  scale_x_discrete(breaks = seq(0, V, by = 10)) + # x軸目盛
+  theme(legend.position = "none") + # 凡例
+  labs(title = "LDA:Gibbs Sampling", 
+       subtitle = expression(beta)) # ラベル
 
 
-# try ---------------------------------------------------------------------
+# 推定結果の推移の確認 --------------------------------------------------------------
 
-# トピックごとの単語数の推移
-N_k_df_wide <- cbind(as.data.frame(t(trace_N_k)), 
-                     1:ncol(trace_N_k))
-colnames(N_k_df_wide) <- c(1:K, "n")
-N_k_df_long <- gather(N_k_df_wide, key = "topic", value = "N_k", -n)
-ggplot(N_k_df_long, aes(n, N_k, color = topic)) + 
-  geom_line()
+## トピック分布の推移の確認
+# 作図用のデータフレームを作成
+trace_alpha_df_wide <- cbind(
+  as.data.frame(trace_alpha), 
+  topic = as.factor(1:K)
+)
+
+# データフレームをlong型に変換
+trace_alpha_df_long <- pivot_longer(
+  trace_alpha_df_wide, 
+  cols = -topic, # 変換せずにそのまま残す現列名
+  names_to = "iteration", # 現列名を格納する新しい列の名前
+  names_prefix = "V", # 現列名から取り除く文字列
+  names_ptypes = list(iteration = numeric()), # 現列名を要素とする際の型
+  values_to = "value" # 現要素を格納する新しい列の名前
+)
+
+# 作図
+ggplot(trace_alpha_df_long, aes(x = iteration, y = value, color = topic)) + 
+  geom_line() + # 折れ線グラフ
+  labs(title = "LDA:Gibbs Sampling", 
+       subtitle = expression(alpha)) # ラベル
+
+
+## 単語分布のパラメータの推移の確認
+# 作図用のデータフレームを作成
+trace_beta_df_wide <- cbind(
+  as.data.frame(trace_beta), 
+  word = as.factor(1:V)
+)
+
+# データフレームをlong型に変換
+trace_beta_df_long <- pivot_longer(
+  trace_beta_df_wide, 
+  cols = -word, # 変換せずにそのまま残す現列名
+  names_to = "iteration", # 現列名を格納する新しい列の名前
+  names_prefix = "V", # 現列名から取り除く文字列
+  names_ptypes = list(iteration = numeric()), # 現列名を要素とする際の型
+  values_to = "value" # 現要素を格納する新しい列の名前
+)
+
+# 作図
+ggplot(trace_beta_df_long, aes(x = iteration, y = value, color = word)) + 
+  geom_line(alpha = 0.5) + # 折れ線グラフ
+  theme(legend.position = "none") + # 凡例
+  labs(title = "LDA:Gibbs Sampling", 
+       subtitle = expression(beta)) # ラベル
+
+
+# 推定値の推移を確認：gif画像 ---------------------------------------------------------
+
+# 利用パッケージ
+library(gganimate)
+
+
+## トピック分布のパラメータ(alpha)
+# 作図
+graph_alpha <- ggplot(trace_alpha_df_long, aes(x = topic, y = value, fill = topic)) + 
+  geom_bar(stat = "identity", position = "dodge") + # 棒グラフ
+  transition_manual(iteration) + # フレーム
+  labs(title = "LDA:Gibbs Sampling", 
+       subtitle = "i={current_frame}") # ラベル
+
+# gif画像を作成
+animate(graph_alpha, nframes = Iter + 1, fps = 10)
+
+
+## 単語分布のパラメータ(beta)
+# 作図
+graph_beta <- ggplot(trace_beta_df_long, aes(x = word, y = value, fill = word, color = word)) + 
+  geom_bar(stat = "identity", position = "dodge") + # 棒グラフ
+  scale_x_discrete(breaks = seq(0, V, by = 10)) + # x軸目盛
+  theme(legend.position = "none") + # 凡例
+  transition_manual(iteration) + # フレーム
+  labs(title = "LDA:Gibbs Sampling", 
+       subtitle = "i={current_frame}") # ラベル
+
+# gif画像を作成
+animate(graph_beta, nframes = Iter + 1, fps = 10)
+
+
+## トピック分布(平均値)
+# 作図用のデータフレームを作成
+trace_theta_df_wide <- cbind(
+  as.data.frame(t(trace_alpha) / apply(t(trace_alpha), 1, sum)), # 平均値を計算
+  iteration = 0:Iter
+)
+
+# データフレームをlong型に変換
+trace_theta_df_long <- pivot_longer(
+  trace_theta_df_wide, 
+  cols = -iteration, # 変換せずにそのまま残す現列名
+  names_to = "topic", # 現列名を格納する新しい列の名前
+  names_prefix = "k=", # 現列名から取り除く文字列
+  names_ptypes = list(topic = factor()), # 現列名を要素とする際の型
+  values_to = "prob" # 現要素を格納する新しい列の名前
+)
+
+# 作図
+graph_theta <- ggplot(trace_theta_df_long, aes(x = topic, y = prob, fill = topic)) + 
+  geom_bar(stat = "identity", position = "dodge") + # 棒グラフ
+  transition_manual(iteration) + # フレーム
+  labs(title = "LDA:Gibbs Sampling", 
+       subtitle = "i={current_frame}") # ラベル
+
+# gif画像を作成
+animate(graph_theta, nframes = Iter + 1, fps = 10)
+
+
+## 単語分布(平均値)
+# 作図用のデータフレームを作成
+trace_phi_df_wide <- cbind(
+  as.data.frame(t(trace_beta) / apply(t(trace_beta), 1, sum)), # 平均値を計算
+  iteration = 0:Iter
+)
+
+# データフレームをlong型に変換
+trace_phi_df_long <- pivot_longer(
+  trace_phi_df_wide, 
+  cols = -iteration, # 変換せずにそのまま残す現列名
+  names_to = "word", # 現列名を格納する新しい列の名前
+  names_prefix = "v=", # 現列名から取り除く文字列
+  names_ptypes = list(word = factor()), # 現列名を要素とする際の型
+  values_to = "prob" # 現要素を格納する新しい列の名前
+)
+
+# 作図
+graph_beta <- ggplot(trace_phi_df_long, aes(x = word, y = prob, fill = word, color = word)) + 
+  geom_bar(stat = "identity", position = "dodge") + # 棒グラフ
+  scale_x_discrete(breaks = seq(0, V, by = 10)) + # x軸目盛
+  theme(legend.position = "none") + # 凡例
+  transition_manual(iteration) + # フレーム
+  labs(title = "LDA:Gibbs Sampling", 
+       subtitle = "i={current_frame}") # ラベル
+
+# gif画像を作成
+animate(graph_beta, nframes = Iter + 1, fps = 10)
+
 
