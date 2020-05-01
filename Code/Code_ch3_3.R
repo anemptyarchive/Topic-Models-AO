@@ -11,7 +11,7 @@ D <- 10
 # 語彙数
 V <- 20
 # 各文書における各語彙数
-N_dv <- matrix(sample(1:10, D * V, replace = TRUE), D, V)
+N_dv <- matrix(sample(0:10, D * V, replace = TRUE), D, V)
 
 
 # パラメータの初期設定 --------------------------------------------------------------
@@ -84,8 +84,8 @@ for(i in 1:Iter){
     for(k in 1:K){ ## (各トピック)
       
       # 負担率の計算
-      tmp_phi_k <- apply(t(phi_kv)^N_dv[d, ], 2, prod)
-      q_dk[d, k] <- theta_k[k] * tmp_phi_k[k] / sum(theta_k * tmp_phi_k)
+      term_k <- apply(t(phi_kv)^N_dv[d, ], 2, prod)
+      q_dk[d, k] <- theta_k[k] * term_k[k] / sum(theta_k * term_k)
       
       # トピック分布(theta)を更新
       new_theta_k[k] <- new_theta_k[k] + q_dk[d, k]

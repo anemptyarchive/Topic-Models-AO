@@ -75,13 +75,11 @@ for(i in 1:Iter) {
                      dimnames = list(paste0("k=", 1:K), paste0("v=", 1:V)))
   new_N_k  <- rep(0, K)
   
-  for(d in 1:D) { ## 文書：1,...,D
+  for(d in 1:D) { ## (各文書)
     
-    for(v in 1:V) { ## 各語彙：1,...,V
-      
-      if(N_dv[d, v] > 0) { ## 出現回数：N_dv > 0のときのみ
-        
-        for(ndv in 1:N_dv[d, v]) { ## 各語彙の出現回数：1,...,N_dv
+    for(v in 1:V) { ## (各語彙)
+      if(N_dv[d, v] > 0) {
+        for(ndv in 1:N_dv[d, v]) { ## (各語彙の出現回数)
           
           # 現ステップの計算のためにカウントを移す
           tmp_N_dk <- N_dk
@@ -110,7 +108,7 @@ for(i in 1:Iter) {
           }
           
           # サンプリング
-          tmp_z_dn   <- rmultinom(n = 1, size = 1:K, prob = p_z_k)
+          tmp_z_dn <- rmultinom(n = 1, size = 1:K, prob = p_z_k)
           z_dn[d, v, ndv] <- which(tmp_z_dn == 1)
           
           # 新たに与えられたトピックを`k`に代入
@@ -121,10 +119,10 @@ for(i in 1:Iter) {
           new_N_kv[k, v] <- new_N_kv[k, v] + 1
           new_N_k[k]     <- new_N_k[k] + 1
           
-        } ## /各語彙の出現回数：1,...,N_dv
-      } ## /出現回数：N_dv > 0のときのみ
-    } ## /各語彙：1,...,V
-  } ## /各文書：1,...,D
+        } ## (/各語彙の出現回数)
+      }
+    } ## (/各語彙)
+  } ## (/各文書)
   
   # トピック集合とカウントを更新
   N_dk <- new_N_dk

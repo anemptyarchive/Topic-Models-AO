@@ -67,6 +67,7 @@ for(i in 1:Iter) {
       D_k.d[z_d[d]]    <- D_k[z_d[d]] - 1
       N_kv.d[z_d[d], ] <- N_kv[z_d[d], ] - N_dv[d, ]
       N_k.d[z_d[d]]    <- N_k[z_d[d]] - N_d[d]
+      
     }
     
     # サンプリング確率の計算
