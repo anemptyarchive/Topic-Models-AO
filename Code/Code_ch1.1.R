@@ -1,8 +1,11 @@
 
 # 1.1.8 -------------------------------------------------------------------
 
+# 確率
+p <- c(0.2, 0.6)
+
 # 情報量
-- log2(0.025)
+- log2(p)
 
 
 
@@ -12,11 +15,13 @@ library(tidyverse)
 ### 確率と情報量の関係
 
 # 作図
-tibble(p = seq(0.01, 0.99, 0.01),  # 確率
-       I = - log2(p)) %>%          # 情報量
-  ggplot(mapping = aes(x = p, y = I)) +   # データ
-  geom_line(color = "#00A968") +          # 折れ線グラフ
-  labs(title = "Information Content:bit") # タイトル
+tibble(
+  p = seq(0.01, 0.99, 0.01), # 確率
+  I = - log2(p) # 情報量
+) %>% 
+  ggplot(mapping = aes(x = p, y = I)) + # データ
+    geom_line(color = "#00A968") + # 折れ線グラフ
+    labs(title = "Information Content(bit)") # タイトル
 
 
 
@@ -25,7 +30,7 @@ tibble(p = seq(0.01, 0.99, 0.01),  # 確率
 # パラメータを指定
 N <- 100   # 試行回数
 x <- 0:N   # 表の回数
-phi <- seq(0, 1, 0.01) # パラメータ(コインの歪み具合)
+phi <- seq(0.01, 0.99, 0.01) # パラメータ(コインの歪み具合)
 
 # 平均情報量を算出
 H <- NULL
