@@ -67,14 +67,14 @@ f_xy <- tibble(
   z = x * y
 )
 
-# 辺と面積の関係を描画
+# 辺と面積の関係を可視化(ヒートマップ)
 ggplot(data = f_xy, mapping = aes(x = x, y = y, fill = z)) + # データ
   geom_tile() + # ヒートマップ
   scale_fill_gradientn(colors = c("blue", "green", "yellow", "orange")) + # タイルの色
   coord_fixed(ratio = 1) # 縦横比
 
 
-# 辺と面積(等高線)の関係を描画
+# 辺と面積の関係を可視化(等高線)
 ggplot(data = f_xy, mapping = aes(x = x, y = y, z = z)) + # データ
   geom_tile(aes(fill = z), alpha = 0.5) + # ヒートマップ
   scale_fill_gradientn(colors = c("blue", "green", "yellow", "orange")) + # タイルの色
@@ -90,7 +90,7 @@ g_xy <- tibble(
   y = 10 - x
 )
 
-# 辺・面積(等高線)と制約の関係を描画
+# 面積と制約の関係を可視化
 ggplot() + 
   geom_tile(data = f_xy, mapping = aes(x = x, y = y, fill = z), alpha = 0.5) + # ヒートマップ
   scale_fill_gradientn(colors = c("blue", "green", "yellow", "orange")) + # タイルの色
