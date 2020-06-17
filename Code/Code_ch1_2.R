@@ -1,69 +1,171 @@
 
-# Chapter1.2 確率分布 ---------------------------------------------------------
+# ch1.2 確率分布 ---------------------------------------------------------
 
-
-# 1.2.1 二項分布 -------------------------------------------------------------------
-
-### 二項分布
+# ch1.2.1 ベルヌーイ分布 -------------------------------------------------------------------
 
 # 利用パッケージ
 library(tidyverse)
 
-# パラメーターを指定
-N   <- 10     # 任意の値を指定する
-phi <- 0.33   # 任意の値を指定する
+
+# 表となる確率を指定
+phi = 0.6
 
 # 作図
-tibble(n = 0:N,                       # 表の回数
-       prob = dbinom(n, N, phi)) %>%  # 確率の算出
-  ggplot(mapping = aes(x = n, y = prob)) +          # データ
+tibble(
+  x = 0:1, # 表の回数
+  prob = c(1 - phi, phi) # 確率
+) %>% 
+  ggplot(aes(x = x, y = prob)) + # データ
     geom_bar(stat = "identity", position = "dodge", fill = "#00A968") + # 棒グラフ
-    labs(title = "Binomial Distribution",           # タイトル
+    labs(title = "Bernoulli Distribution", 
+         subtitle = paste0("phi=", phi)) # ラベル
+
+
+# ch1.2.1 二項分布 -------------------------------------------------------------------
+
+# 通常 ----------------------------------------------------------------------
+
+# 利用パッケージ
+library(tidyverse)
+
+
+# 試行回数を指定
+N <- 10
+
+# 表となる確率(コインの歪み具合)を指定
+phi <- 0.33
+
+# 作図
+tibble(
+  x = 0:N, # 表の回数
+  prob = dbinom(x = x, size = N, prob = phi) # 二項分布に従う確率
+  ) %>% 
+  ggplot(mapping = aes(x = x, y = prob)) + # データ
+    geom_bar(stat = "identity", position = "dodge", fill = "#00A968") + # 棒グラフ
+    labs(title = "Binomial Distribution", # タイトル
          subtitle = paste0("N=", N, ", phi=", phi)) # サブタイトル
 
 
-### 二項分布(複数)
+# 複数 ----------------------------------------------------------------------
 
+# 試行回数を指定
+N <- 100
 
-# パラメーターを指定
-N  <- 100   # 任意の値を指定する
-phi <- c(0.1, 0.33, 0.5, 0.8, 0.9) # 任意の値を指定する
+# 表となる確率を指定
+phi <- c(0.1, 0.33, 0.5, 0.8, 0.9)
 
 # 作図用のデータフレームを作成
-res_df <- data.frame()
+res_df <- tibble()
 for(i in seq_along(phi)) {
+  
   # 計算結果のデータフレームを作成
-  tmp_df <- tibble(n = 0:N,                            # 表の回数
-                   prob = dbinom(n, N, phi[i]),        # 確率の算出
-                   parameter = paste0("phi=", phi[i])) # 作図用のラベル
+  tmp_df <- tibble(
+    x = 0:N, # 表の回数
+    prob = dbinom(x = x, size = N, prob = phi[i]), # 二項分布に従う確率
+    phi = as.factor(phi[i]) # 作図用のラベル
+)
   
   # データフレームを結合
   res_df <- rbind(res_df, tmp_df)
 }
 
-# 描画
-ggplot(data = res_df, mapping = aes(x = n, y = prob, 
-                                    fill = parameter, color = parameter)) + # データ
-  geom_bar(stat = "identity", position = "dodge") +  # 棒グラフ
-  labs(title = "Binomial Distribution")              # タイトル
+# 作図
+ggplot(data = res_df, mapping = aes(x = x, y = prob, fill = phi, color = phi)) + # データ
+  geom_bar(stat = "identity", position = "dodge") + # 棒グラフ
+  labs(title = "Binomial Distribution") # タイトル
+
+
+# パラメータの変化による分布の変化：gif画像 ---------------------------------------------------------------------
+
+# 利用パッケージ
+library(tidyverse)
+library(gganimate)
+
+
+# 試行回数を指定
+N <- 100
+
+# 表となる確率
+phi <- seq(0.01, 0.99, by = 0.01)
+
+# 作図用のデータフレームを作成
+res_df <- tibble()
+for(i in seq_along(phi)) {
+  
+  # 計算結果のデータフレームを作成
+  tmp_df <- tibble(
+    x = 1:N, # 表の回数
+    prob = dbinom(x = x, size = N, prob = phi[i]), # 確率
+    phi = as.factor(phi[i]) # 作図用のラベル
+  )
+  
+  # データフレームを結合
+  res_df <- rbind(res_df, tmp_df)
+}
+
+# 作図
+graph_binom <- ggplot(data = res_df, mapping = aes(x = x, y = prob)) + # データ
+  geom_bar(stat = "identity", position = "dodge", fill = "#00A968", color = "#00A968") + # 棒グラフ
+  transition_manual(phi) + # フレーム
+  labs(title = "Binomial Distribution", 
+       subtitle = "phi={current_frame}") # ラベル
+
+# gif画像を作成
+animate(graph_binom, nframes = length(phi), fps = 10)
+
+
+# 試行回数の変化によるグラフの変化：gif画像 --------------------------------------------------
+
+# 試行回数を指定
+N <- 200
+
+# 表となる確率を指定
+phi <- 0.5
+
+# 作図用のデータフレームを作成
+res_df <- tibble()
+for(i in 1:N) {
+  
+  # 計算結果のデータフレームを作成
+  tmp_df <- tibble(
+    x = 1:i, # 表の回数
+    prob = dbinom(x = x, size = i, prob = phi), # 確率
+    N = as.factor(i) # 作図用のラベル
+  )
+  
+  # データフレームを結合
+  res_df <- rbind(res_df, tmp_df)
+}
+
+# 作図
+graph_binom <- ggplot(data = res_df, mapping = aes(x = x, y = prob)) + # データ
+  geom_bar(stat = "identity", position = "dodge", fill = "#00A968", color = "#00A968") + # 棒グラフ
+  transition_manual(N) + # フレーム
+  labs(title = "Binomial Distribution", 
+       subtitle = "N={current_frame}") # ラベル
+
+# gif画像を作成
+animate(graph_binom, nframes = N, fps = 10)
 
 
 
-# 1.2.3 ベータ分布 -------------------------------------------------------------------
+# ch1.2.3 ベータ分布 -------------------------------------------------------------------
 
-### ベータ分布
+# 通常 ----------------------------------------------------------------------
 
 # 利用パッケージ
 library(tidyverse)
 
 
 # パラメーターを指定
-val_alpha <- 0.5   # 任意の値を指定する
-val_beta  <- 0.5   # 任意の値を指定する
+val_alpha <- 0.5
+val_beta  <- 0.5
 
 # 作図
-tibble(phi = seq(0, 1, 0.01),  # phi(x軸)の値の設定
-       y = (1 / beta(val_alpha, val_beta)) * phi ^ (val_alpha - 1) * (1 - phi) ^ (val_beta - 1)) %>%  # y軸の値を算出
+tibble(
+  phi = seq(0, 1, 0.01),  # phi(x軸)の値の設定
+  y = (1 / beta(val_alpha, val_beta)) * phi^(val_alpha - 1) * (1 - phi)^(val_beta - 1) # y軸の値を算出
+) %>% 
   ggplot(mapping = aes(x = phi, y = y)) +  # データ
     geom_line(color = "#00A968") +         # 折れ線グラフ
     coord_cartesian(ylim = c(0, 3)) +      # y軸の範囲
