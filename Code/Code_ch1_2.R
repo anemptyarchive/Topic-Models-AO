@@ -255,6 +255,7 @@ tibble(
          subtitle = paste0("alpha=", alpha, ", beta=", beta), 
          x = expression(phi)) # ラベル
 
+
 # 複数 ----------------------------------------------------------------------
 
 # パラメーターの指定
@@ -338,18 +339,20 @@ animate(graph_data, nframes = nrow(parameter_df), fps = 25)
 # 利用パッケージ
 library(tidyverse)
 
+
 # パラメーターを指定(V=3)
 beta_v <- c(4, 2, 3)
 
-# ランダムに値を生成
-phi <- sample(seq(0.001, 1, 0.001), 120000, replace = TRUE) %>% 
+# 値をランダムに生成
+phi <- seq(0.001, 1, 0.001) %>% 
+  sample(120000, replace = TRUE) %>% 
   matrix(ncol = 3)
 
-# 満遍なく値を生成
+# 値を満遍なく生成
 phi <- tibble(
   V1 = rep(rep(seq(0.02, 1, by = 0.02), times = 50), times = 50), 
   V2 = rep(rep(seq(0.02, 1, by = 0.02), each = 50), times = 50), 
-  V3 = rep(seq(0.02, 1, by = 0.02), each = 2500)
+  V3 = rep(seq(0.02, 1, by = 0.02), each = 50^2)
 ) %>% 
   as.matrix()
 
@@ -397,8 +400,9 @@ beta <- tibble(
 ) %>% 
   t()
 
-# ランダムな値を生成
-phi <- sample(seq(0.001, 1, 0.001), 45000, replace = TRUE) %>% 
+# 値をランダムに生成
+phi <- seq(0.001, 1, 0.001) %>% 
+  sample(45000, replace = TRUE) %>% 
   matrix(ncol = 3)
 
 # 正規化
