@@ -30,12 +30,11 @@ doc_df2 <- tibble(v = 1:V) %>% # 1からVまでの受け皿(行)を作成
   mutate(N_v = replace_na(N_v, 0)) # NAを0に置換
 
 # 最尤推定
-mle_df <- doc_df2 %>% 
+ml_df <- doc_df2 %>% 
   mutate(phi_v = N_v / sum(N_v)) # 式(4.2)
-head(mle_df)
 
 # 作図
-ggplot(mle_df, aes(x = v, y = phi_v)) + # データ
+ggplot(ml_df, aes(x = v, y = phi_v)) + # データ
   geom_bar(stat = "identity", fill = "#00A968") + # 棒グラフ
   scale_x_continuous(breaks = 1:V, labels = 1:V) + # 軸目盛
   labs(title = "Unigram Model", 
@@ -43,78 +42,104 @@ ggplot(mle_df, aes(x = v, y = phi_v)) + # データ
        y = "prob") # ラベル
 
 
-# chapter2.4 --------------------------------------------------------------
+# ch2.4 MAP推定 --------------------------------------------------------------
 
 # 利用パッケージ
 library(tidyverse)
 
-# パラメーターの設定
-beta  <- 2  # 任意の値を指定する
-shake <- 10 # 任意の試行回数を指定する
 
-# サイコロを振る
-shake_result1 <- data.frame(w_dn = sample(x = 1:6, size = shake, replace = TRUE)) %>% # サイコロを振る
-                 group_by(w_dn) %>%   # 出目でグループ化
-                 summarise(N_v = n()) # 出目ごとにカウント
+# 単語数(サイコロを振る回数)を指定
+N_d <- 10
+
+# 語彙数(サイコロの目の数)を指定
+V = 6
+
+# 真の単語分布(カテゴリ分布のパラメータ)を指定
+phi_turth <- rep(1, V) / V
+sum(phi_turth)
+
+# 単語分布のパラメータを指定
+beta <- 2
+
+# 文書を生成(サイコロを振る)
+w_dn <- sample(x = 1:V, size = N_d, replace = TRUE, prob = phi_turth)
+w_dn
+
+# 各語彙の出現回数を集計
+doc_df1 <- tibble(v = w_dn) %>% 
+  group_by(v) %>% # 出目でグループ化
+  summarise(N_v = n()) # 出目ごとにカウント
 
 # 出ない目があったとき用の対策
-shake_result2 <- left_join(data.frame(w_dn = 1:6), shake_result1, by = "w_dn")
-shake_result2$N_v[is.na(shake_result2$N_v)] <- 0 # NAを0に置換
-
-# 最大事後確率推定
-map_result <- shake_result2 %>% 
-              mutate(phi_v = (N_v + beta - 1) / (sum(N_v) + (beta - 1) * length(w_dn)))
-
-# 描画
-ggplot(map_result, aes(x = w_dn, y = phi_v)) +        # データの設定
-  geom_bar(stat = "identity", fill = "#00A968") +     # 棒グラフ
-  scale_x_continuous(breaks = 1:6, labels = 1:6) +    # 軸目盛
-  labs(title = "Maximum A Posteriori Estimation",       # 図のタイトル
-       x = expression(w[dn]), y = expression(phi[v])) # 軸ラベル
+doc_df2 <- tibble(v = 1:V) %>% # 1からVまでの受け皿(行)を作成
+  left_join(doc_df1, by = "v") %>% # 結合
+  mutate(N_v = replace_na(N_v, 0)) # NAを0に置換
 
 
+# MAP推定
+map_df <- doc_df2 %>% 
+  mutate(phi_v = (N_v + beta - 1) / (sum(N_v) + (beta - 1) * V))
 
-# パラメーターの指定
-beta  <- 2
-shake <- c(1, 10, 100)
+# 作図
+ggplot(map_df, aes(x = v, y = phi_v)) + # データ
+  geom_bar(stat = "identity", fill = "#00A968") + # 棒グラフ
+  scale_x_continuous(breaks = 1:V, labels = 1:V) + # 軸目盛
+  labs(title = "Unigram Model", 
+       subtitle = "Maximum A Posteriori Estimation", 
+       y = "prob") # ラベル
+
+
+# 最尤推定とMAP推定の比較 -----------------------------------------------------------
+
+# 単語数を指定
+N_d_vec <- c(1, 10, 100)
 
 # パラメータ生成
-df <- data.frame()
-for(i in seq_along(shake)){
-  # サイコロサンプル
-  dice <- data.frame(w_dn = sample(1:6, shake[i], replace = TRUE)) %>% 
-    group_by(w_dn) %>% 
-    summarise(N_v = n())
-  tmp_df1 <- left_join(data.frame(w_dn = 1:6), dice, by = "w_dn")
-  tmp_df1$N_v[is.na(tmp_df1$N_v)] <- 0
+res_df <- tibble()
+for(i in seq_along(N_d_vec)){
   
-  # パラメータ生成：MLe
-  tmp_ml <- tibble(w_dn = tmp_df1$w_dn, 
-                   N_v = tmp_df1$N_v, 
-                   phi_v = N_v / sum(N_v), 
-                   method = "ML", 
-                   shake = shake[i])
+  # 文書を生成
+  doc_df <- tibble(
+    v = sample(x = 1:V, size = N_d_vec[i], replace = TRUE, prob = phi_turth) # 単語を生成
+  ) %>% 
+    group_by(v) %>% # 語彙ごとにグループ化
+    summarise(N_v = n()) %>% # 各語彙の出現回数を集計
+    right_join(
+      tibble(
+        v = 1:V, 
+        N = as.factor(N_d_vec[i]) # 作図用のラベル
+      ), 
+      by = "v"
+    ) %>% # 結合
+    mutate(N_v = replace_na(N_v, 0)) # NAを0に置換
   
-  # パラメータ生成：MAPe
-  tmp_map <- tibble(w_dn = tmp_df1$w_dn, 
-                    N_v = tmp_df1$N_v, 
-                    phi_v = (N_v + beta - 1) / (sum(N_v) + (beta - 1) * length(w_dn)), 
-                    method = "MAP", 
-                    shake = shake[i])
+  # 推定
+  tmp_df <- doc_df %>% 
+    mutate(ml = N_v / sum(N_v)) %>% # 最尤推定:式(2.3)
+    mutate(map = (N_v + beta - 1) / (sum(N_v) + (beta - 1) * V)) # MAP推定
   
-  tmp_df2 <- rbind(tmp_map, tmp_ml)
-  df <- rbind(df, tmp_df2)
+  # 推定結果を結合
+  res_df <- rbind(res_df, tmp_df)
 }
 
-# 描画
-ggplot(df, aes(x = w_dn, y = phi_v, fill = method)) +  # データの設定
-  geom_bar(stat = "identity") +                        # 棒グラフ
-  facet_wrap(method ~ shake) +                         # グラフの分割
-  scale_x_continuous(breaks = 1:6, labels = 1:6) +     # 軸目盛
-  scale_fill_manual(values = c("#00A968", "Orange")) + # 色
-  labs(x = expression(w[dn]), y = expression(phi[v]))  # 軸ラベル
-  
+# wide型データフレームをlong型に変換
+res_df_long <- pivot_longer(
+  res_df, 
+  cols = c(ml, map), # 変換する列を指定
+  names_to = "method", # 現列名を値として格納する列名
+  names_ptypes = list(method = factor()), # 現列名を値とする際の型を指定
+  values_to = "prob" # 現セルの値を格納する列前
+)
 
+# 作図
+ggplot(res_df_long, aes(x = v, y = prob, fill = method)) + # データの設定
+  geom_bar(stat = "identity") + # 棒グラフ
+  facet_wrap(method ~ N, nrow = 2) + # グラフの分割
+  #facet_wrap(N ~ method, ncol = 2) + # グラフの分割
+  scale_x_continuous(breaks = 1:V, labels = 1:V) + # 軸目盛
+  scale_fill_manual(values = c("#00A968", "Orange")) + # 塗りつぶし色
+  labs(title = "Unigram Model") # ラベル
+  
 
 # chapter2.5 -----------------------------------------------------------------
 
