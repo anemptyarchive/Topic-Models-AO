@@ -1,33 +1,46 @@
 
-# chapter2.3 ----------------------------------------------------------------
-
+# ch2.3 最尤推定 ----------------------------------------------------------------
 
 # 利用パッケージ
 library(tidyverse)
 
-# パラメーターの設定
-beta  <- 2  # 任意の値を指定する
-shake <- 10 # 任意の試行回数を指定する
 
-# サイコロを振る
-shake_result1 <- data.frame(w_dn = sample(x = 1:6, size = shake, replace = TRUE)) %>% # サイコロを振る
-                 group_by(w_dn) %>%   # 出目でグループ化
-                 summarise(N_v = n()) # 出目ごとにカウント
+# 単語数(サイコロを振る回数)を指定
+N_d <- 10
+
+# 語彙数(サイコロの目の数)を指定
+V = 6
+
+# 真の単語分布(カテゴリ分布のパラメータ)を指定
+phi_turth <- rep(1, V) / V
+sum(phi_turth)
+
+# 文書を生成(サイコロを振る)
+w_dn <- sample(x = 1:V, size = N_d, replace = TRUE, prob = phi_turth)
+w_dn
+
+# 各語彙の出現回数を集計
+doc_df1 <- tibble(v = w_dn) %>% 
+  group_by(v) %>% # 出目でグループ化
+  summarise(N_v = n()) # 出目ごとにカウント
 
 # 出ない目があったとき用の対策
-shake_result2 <- left_join(data.frame(w_dn = 1:6), shake_result1, by = "w_dn")
-shake_result2$N_v[is.na(shake_result2$N_v)] <- 0 # NAを0に置換
+doc_df2 <- tibble(v = 1:V) %>% # 1からVまでの受け皿(行)を作成
+  left_join(doc_df1, by = "v") %>% # 結合
+  mutate(N_v = replace_na(N_v, 0)) # NAを0に置換
 
 # 最尤推定
-mle_result <- shake_result2 %>% 
-              mutate(phi_v = N_v / sum(N_v))
+mle_df <- doc_df2 %>% 
+  mutate(phi_v = N_v / sum(N_v)) # 式(4.2)
+head(mle_df)
 
-# 描画
-ggplot(mle_result, aes(x = w_dn, y = phi_v)) +        # データの設定
-  geom_bar(stat = "identity", fill = "#00A968") +     # 棒グラフ
-  scale_x_continuous(breaks = 1:6, labels = 1:6) +    # 軸目盛
-  labs(title = "Maximum Likelihood Estimation",       # 図のタイトル
-       x = expression(w[dn]), y = expression(phi[v])) # 軸ラベル
+# 作図
+ggplot(mle_df, aes(x = v, y = phi_v)) + # データ
+  geom_bar(stat = "identity", fill = "#00A968") + # 棒グラフ
+  scale_x_continuous(breaks = 1:V, labels = 1:V) + # 軸目盛
+  labs(title = "Unigram Model", 
+       subtitle = "Maximum Likelihood Estimation", 
+       y = "prob") # ラベル
 
 
 # chapter2.4 --------------------------------------------------------------
