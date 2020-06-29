@@ -141,67 +141,67 @@ ggplot(res_df_long, aes(x = v, y = prob, fill = method)) + # データの設定
   labs(title = "Unigram Model") # ラベル
   
 
-# chapter2.5 -----------------------------------------------------------------
+# ch2.5 ベイズ推定 -----------------------------------------------------------------
 
 # 利用パッケージ
 library(tidyverse)
 
 
-# パラメーターの設定
-beta  <- 2 # 任意の値を指定する
-shake <- 64 # 任意の試行回数を指定する
+# 単語数(サイコロを振る回数)を指定
+N_d <- 64
 
+# 語彙数(サイコロの目の数):(V=3)
+V = 3
 
-# サイコロを振る
-shake_result1 <- data.frame(w_dn = sample(x = 1:3, size = shake, replace = TRUE)) %>% # サイコロを振る
-                 group_by(w_dn) %>%   # 出目でグループ化
-                 summarise(N_v = n()) # 出目ごとにカウント
+# 真の単語分布(カテゴリ分布のパラメータ)を指定
+phi_turth <- rep(1, V) / V
+sum(phi_turth)
+
+# 単語分布のパラメータを指定
+beta <- 2
+
+# 文書を生成(サイコロを振る)
+w_dn <- sample(x = 1:V, size = N_d, replace = TRUE, prob = phi_turth)
+w_dn
+
+# 各語彙の出現回数を集計
+doc_df1 <- tibble(v = w_dn) %>% 
+  group_by(v) %>% # 出目でグループ化
+  summarise(N_v = n()) # 出目ごとにカウント
 
 # 出ない目があったとき用の対策
-shake_result2 <- left_join(data.frame(w_dn = 1:3), shake_result1, by = "w_dn")
-shake_result2$N_v[is.na(shake_result2$N_v)] <- 0 # NAを0に置換
+doc_df2 <- tibble(v = 1:V) %>% # 1からVまでの受け皿(行)を作成
+  left_join(doc_df1, by = "v") %>% # 結合
+  mutate(N_v = replace_na(N_v, 0)) # NAを0に置換
 
 
-# 散布図用のランダムな値を用意
-n_1 <- sample(seq(0, 1, 0.001), 50000, replace = TRUE)
-n_2 <- sample(seq(0, 1, 0.001), 50000, replace = TRUE)
-n_3 <- sample(seq(0, 1, 0.001), 50000, replace = TRUE)
-n <- n_1 + n_2 + n_3 # 和が1となるための処理
+# 値をランダムに生成
+phi_mat <- seq(0.001, 1, 0.001) %>% 
+  sample(size = 120000, replace = TRUE) %>% 
+  matrix(ncol = 3)
 
-# パラメータ：Φ
-phi_1 <- n_1 / n
-phi_2 <- n_2 / n
-phi_3 <- n_3 / n
+# 正規化
+phi_mat <- phi_mat / rowSums(phi_mat)
 
-## ベイズ推定
-# Gamma(N + beta * V)
-numerator <- lgamma(sum(shake_result2$N_v) + beta * nrow(shake_result2))
+# ベイズ推定
+bayes_df <- tibble(
+  x = phi_mat[, 2] + (phi_mat[, 3] / 2), # 三角座標に変換
+  y = sqrt(3) * (phi_mat[, 3] / 2), # 三角座標に変換
+  nmlz_term = lgamma(sum(doc_df2[["N_v"]]) + beta * V) - sum(lgamma(doc_df2[["N_v"]] + beta)), # 
+  density = exp(nmlz_term + colSums((doc_df2[["N_v"]] + beta - 1) * log(t(phi_mat)))) # 正規化項
+)
 
-# prod_{V=1}^V Gamma(N_v + beta)
-denominator <- sum(lgamma(shake_result2$N_v + beta))
-
-# N_v + beta - 1
-exponent <- shake_result2$N_v + beta - 1
-
-# phi_v^{`exponent`}
-phi_v <- exponent[1] * log(phi_1) + exponent[2] * log(phi_2) + exponent[3] * log(phi_3)
-
-# 作図用のdfを作成
-bayesian_result <- data.frame(x = phi_2 + (phi_3 / 2),   # 三角座標への変換処理
-                              y = sqrt(3) * (phi_3 / 2), # 三角座標への変換処理
-                              z = exp(numerator - denominator + phi_v)) # 推定値
-
-# 描画
-ggplot(data = bayesian_result, mapping = aes(x = x, y = y, color = z)) + # データの指定
-  geom_point() +                                                         # 散布図
+# 作図
+ggplot(bayes_df, aes(x = x, y = y, color = density)) + # データ
+  geom_point() + # 散布図
   scale_color_gradientn(colors = c("blue", "green", "yellow", "red")) +  # 色
-  scale_x_continuous(breaks = c(0, 1), labels = c("(1, 0, 0)", "(0, 1, 0)")) +    # x軸目盛
+  scale_x_continuous(breaks = c(0, 1), labels = c("(1, 0, 0)", "(0, 1, 0)")) + # x軸目盛
   scale_y_continuous(breaks = c(0, 0.87), labels = c("(1, 0, 0)", "(0, 0, 1)")) + # y軸目盛
   coord_fixed(ratio = 1) + # 縦横の比率
-  labs(title = "Bayesian Estimation",                         # タイトル
-       x = expression(paste(phi[1], ", ", phi[2], sep = "")), # x軸ラベル
-       y = expression(paste(phi[1], ", ", phi[3], sep = ""))) # y軸ラベル
-
+  labs(title = "Unigram Model", 
+       subtitle = "Bayesian Estimation", 
+       x = expression(paste(phi[1], ", ", phi[2], sep = "")), 
+       y = expression(paste(phi[1], ", ", phi[3], sep = ""))) # ラベル
 
 
 # chapter2.6 --------------------------------------------------------------
