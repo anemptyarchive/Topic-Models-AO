@@ -78,15 +78,14 @@ doc_df2 <- tibble(v = 1:V) %>% # 1からVまでの受け皿(行)を作成
 
 # MAP推定
 map_df <- doc_df2 %>% 
-  mutate(phi_v = (N_v + beta - 1) / (sum(N_v) + (beta - 1) * V))
+  mutate(prob = (N_v + beta - 1) / (sum(N_v) + (beta - 1) * V))
 
 # 作図
-ggplot(map_df, aes(x = v, y = phi_v)) + # データ
+ggplot(map_df, aes(x = v, y = prob)) + # データ
   geom_bar(stat = "identity", fill = "#00A968") + # 棒グラフ
   scale_x_continuous(breaks = 1:V, labels = 1:V) + # 軸目盛
   labs(title = "Unigram Model", 
-       subtitle = "Maximum A Posteriori Estimation", 
-       y = "prob") # ラベル
+       subtitle = "Maximum A Posteriori Estimation") # ラベル
 
 
 # 最尤推定とMAP推定の比較 -----------------------------------------------------------
@@ -204,40 +203,57 @@ ggplot(bayes_df, aes(x = x, y = y, color = density)) + # データ
        y = expression(paste(phi[1], ", ", phi[3], sep = ""))) # ラベル
 
 
-# chapter2.6 --------------------------------------------------------------
+# ch2.6 ベイズ予測分布 --------------------------------------------------------------
+
+# 通常 ----------------------------------------------------------------------
 
 # 利用パッケージ
 library(tidyverse)
 
-# パラメータの指定
-beta  <- 2 # 任意の値を指定する
-shake <- 1 # 任意の試行回数の指定
 
-# 語彙インデックス：v
-v <- 1:6
+# 単語数(サイコロを振る回数)を指定
+N_d <- 10
 
-# サイコロを振る
-shake_result1 <- data.frame(w_dn = sample(x = v, size = shake, replace = TRUE)) %>% 
-                 group_by(w_dn) %>%   # 出目でグループ化
-                 summarise(N_v = n()) # 出目ごとにカウント
+# 語彙数(サイコロの目の数)
+V = 6
+
+# 真の単語分布(カテゴリ分布のパラメータ)を指定
+phi_turth <- rep(1, V) / V
+sum(phi_turth)
+
+# 単語分布のパラメータを指定
+beta <- 2
+
+# 文書を生成(サイコロを振る)
+w_dn <- sample(x = 1:V, size = N_d, replace = TRUE, prob = phi_turth)
+w_dn
+
+# 各語彙の出現回数を集計
+doc_df1 <- tibble(v = w_dn) %>% 
+  group_by(v) %>% # 出目でグループ化
+  summarise(N_v = n()) # 出目ごとにカウント
 
 # 出ない目があったとき用の対策
-shake_result2 <- left_join(data.frame(w_dn = v), shake_result1, by = "w_dn")
-shake_result2$N_v[is.na(shake_result2$N_v)] <- 0 # NAを0に置換
+doc_df2 <- tibble(v = 1:V) %>% # 1からVまでの受け皿(行)を作成
+  left_join(doc_df1, by = "v") %>% # 結合
+  mutate(N_v = replace_na(N_v, 0)) # NAを0に置換
 
-# 総単語数：N
-N <- sum(shake_result2$N_v)
+# ベイズ予測分布を計算
+predict_df <- tibble(
+  v = 1:V, # 語彙インデックス
+  prob = (doc_df2[["N_v"]] + beta) / sum(doc_df2[["N_v"]] + beta) # 確率
+)
 
-# 総語彙数：V
-V <- length(v)
+# 作図
+ggplot(predict_df, aes(x = v, y = prob)) + # データ
+  geom_bar(stat = "identity", fill = "#00A968") + # 棒グラフ
+  scale_x_continuous(breaks = 1:V, labels = 1:V) + # 軸目盛
+  labs(title = "Unigram Model", 
+       subtitle = "Bayesian Predictive Distribution") # ラベル
 
-# ベイズ予測
-p_w <- (shake_result2$N_v + beta) / (N + beta * V)
 
-# 作図用のdfを作成
-bpd_result <- data.frame(v = v, 
-                         likelihood = shake_result2$N_v / N, 
-                         predicted = p_w)
+# 複数 ----------------------------------------------------------------------
+
 bpd_long <- gather(bpd_result, key = "tag", value = "prob", -v)
 
 # 描画
