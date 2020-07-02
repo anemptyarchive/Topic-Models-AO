@@ -262,7 +262,7 @@ library(tidyverse)
 x_plot <- seq(0.01, 10, 0.01)
 
 
-# ディガンマ関数
+# ディガンマ関数の曲線
 digamma_df <- tibble(
   x = x_plot, 
   y = digamma(x)
@@ -278,7 +278,7 @@ ggplot(digamma_df, aes(x = x, y = y)) +
 # ディガンマ関数の性質 --------------------------------------------------------------
 
 # 対数をとったガンマ関数の曲線
-log_Gamma_df <- tibble(
+log_gamma_df <- tibble(
   x = x_plot, # 作図用のxの値
   y = lgamma(x) # 対数をとったガンマ関数の値
 )
@@ -307,8 +307,8 @@ tangent_df <- tibble(
 
 # 作図
 ggplot() + 
-  geom_line(data = log_Gamma_df, mapping = aes(x = x, y = y)) + # 曲線
-  geom_line(data = straight_line_df, mapping = aes(x = x, y = y), color = "#00A968") + # 直線
+  geom_line(data = log_gamma_df, mapping = aes(x = x, y = y)) + # 対数をとったガンマ関数の曲線
+  geom_line(data = straight_line_df, mapping = aes(x = x, y = y), color = "#00A968") + # 曲線上の2点を結ぶ直線
   geom_line(data = tangent_df, mapping = aes(x = x, y = y), color = "Orange") + # 接線
   geom_point(data = point_df, mapping = aes(x = x, y = y)) +  # 曲線上の2点
   labs(title = "log Gamma Function", 
