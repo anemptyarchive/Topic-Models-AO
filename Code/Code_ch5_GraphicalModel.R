@@ -172,3 +172,43 @@ DiagrammeR::grViz("
 ")
 
 
+# ch5.4 著者トピックモデル ---------------------------------------------------------
+
+# 著者トピックモデル
+DiagrammeR::grViz("
+  digraph AuthorTM{
+    graph [rankdir = LR]
+    node [shape = circle, fixedsize = ture, fontname = 'Times-Italic']
+    
+    alpha [label = '&alpha;']
+    subgraph cluster_A{
+      label = A
+      theta [label = <<B>&theta;</B>@_{s}>]
+    }
+    
+    beta [label = '&beta;']
+    subgraph cluster_K{
+      label = K
+      phi [label = <<B>&phi;</B>@_{k}>]
+    }
+    
+    subgraph cluster_D{
+      label = D
+      a [label = a, style = filled, filledcolor = 'gray']
+      subgraph cluster_N{
+        label = N
+        y [label = 'y@_{dn}']
+        z [label = 'z@_{dn}']
+        w [label = 'w@_{dn}', style = filled, filledcolor = 'gray']
+      }
+    }
+    
+    edge []
+      alpha -> theta -> z;
+      phi -> beta [dir = back];
+      w -> phi [dir = back];
+      a -> y -> z -> w;
+  }
+")
+
+
