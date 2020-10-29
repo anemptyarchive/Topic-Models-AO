@@ -212,3 +212,60 @@ DiagrammeR::grViz("
 ")
 
 
+# ch5.5 トピック追跡モデル ---------------------------------------------------------
+
+# トピック追跡モデル
+DiagrammeR::grViz("
+  digraph TrackingTM{
+    graph [rankdir = LR]
+    node [shape = circle, fixedsize = ture, fontname = 'Times-Italic']
+    
+    alpha_0 [label = <<B>&alpha;</B>@^{(t-1)}>]
+    subgraph cluster_D_0{
+      label = D
+      theta_0 [label = <<B>&theta;</B>@_{d}@^{(t-1)}>]
+      subgraph cluster_N_0{
+        label = 'N@_{d}'
+        z_0 [label = 'z@_{dn}@^{(t-1)}']
+        w_0 [label = 'w@_{dn}@^{(t-1)}', style = filled, filledcolor = 'gray']
+      }
+    }
+    
+    beta_0 [label = <<B>&beta;</B>@^{(t-1)}>]
+    subgraph cluster_K_0{
+      label = K
+      phi_0 [label = <<B>&phi;</B>@_{k}@^{(t-1)}>]
+    }
+    
+    alpha [label = <<B>&alpha;</B>@^{(t)}>]
+    subgraph cluster_D{
+      label = D
+      theta [label = <<B>&theta;</B>@_{d}@^{(t)}>]
+      subgraph cluster_N{
+        label = 'N@_{d}'
+        z [label = 'z@_{dn}@^{(t)}']
+        w [label = 'w@_{dn}@^{(t)}', style = filled, filledcolor = 'gray']
+      }
+    }
+    
+    beta [label = <<B>&beta;</B>@^{(t)}>]
+    subgraph cluster_K{
+      label = K
+      phi [label = <<B>&phi;</B>@_{k}@^{(t)}>]
+    }
+    
+    edge []
+      alpha -> theta -> z -> w;
+      phi -> beta [dir = back];
+      w -> phi [dir = back];
+      
+      alpha_0 -> theta_0 -> z_0 -> w_0;
+      phi_0 -> beta_0 [dir = back];
+      w_0 -> phi_0 [dir = back];
+      
+      theta_0 -> theta;
+      phi_0 -> phi;
+  }
+")
+
+
