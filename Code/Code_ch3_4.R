@@ -11,38 +11,39 @@ D <- 10
 # 語彙数
 V <- 20
 # 各文書における各語彙数
-N_dv <- matrix(sample(1:10, D * V, replace = TRUE), D, V)
+N_dv <- matrix(sample(0:25, D * V, replace = TRUE), D, V)
+# 各文書の単語数
+N_d <- rowSums(N_dv)
 
 
 # パラメータの初期設定 --------------------------------------------------------------
 
-# トピック数(K)を指定
+# トピック数を指定
 K <- 4
 
-# 負担率(q_dk)の受け皿
+# 負担率の受け皿
 q_dk <- matrix(
   0, nrow = D, ncol = K, 
   dimnames = list(paste0("d=", 1:D), # 確認用の行名
                   paste0("k=", 1:K)) # 確認用の列名
 )
 
-# 事前分布のパラメータ(α, β)を指定
+# 事前分布のパラメータを指定
 alpha <- 2
 beta  <- 2
 
-# 変分事後分布のパラメータ(α_k)
-alpha_k <- seq(1, 3, 0.1) %>% # 範囲を指定
+# 変分事後分布のパラメータ
+alpha_k <- seq(0.1, 5, 0.1) %>% # 範囲を指定
   sample(size = K, replace = TRUE)
-# 確認用の要素名
-names(alpha_k) <- paste0("k=", 1:K)
+names(alpha_k) <- paste0("k=", 1:K) # 確認用の要素名
 
-# 変分事後分布のパラメータ(β_kv)
-beta_kv <- seq(1, 3, 0.1) %>% # 範囲を指定
+# 変分事後分布のパラメータ
+beta_kv <- seq(0.1, 5, 0.1) %>% # 範囲を指定
   sample(size = K * V, replace = TRUE) %>% 
   matrix(
     nrow = K, ncol = V, 
-    dimnames = list(paste0("k=", 1:K), # 行名
-                    paste0("v=", 1:V)) # 列名
+    dimnames = list(paste0("k=", 1:K), # 確認用の行名
+                    paste0("v=", 1:V)) # 確認用の列名
   )
 
 
@@ -68,10 +69,7 @@ for(i in 1:Iter) {
   
   # 次ステップのハイパーパラメータ(alpha, beta)を初期化
   new_alpha_k <- rep(alpha, K)
-  new_beta_kv <- matrix(
-    beta, nrow = K, ncol = V, 
-    dimnames = list(paste0("k=", 1:K), paste0("v=", 1:V))
-  )
+  new_beta_kv <- matrix(beta, nrow = K, ncol = V, dimnames = list(paste0("k=", 1:K), paste0("v=", 1:V)))
   
   for(d in 1:D){ ## (各文書：1,...,D)
     
@@ -83,7 +81,7 @@ for(i in 1:Iter) {
       q_dk[d, k]  <- exp(tmp_q_alpha + tmp_q_beta)
     }
     
-    # 負担率の正規化：sum_{k=1}^K q_dk = 1
+    # 負担率の正規化
     if(sum(q_dk[d, ]) > 0) { ## (全ての値が0の場合は回避)
       q_dk[d, ] <- q_dk[d, ] / sum(q_dk[d, ])
     } else if(sum(q_dk[d, ]) == 0) {
@@ -262,6 +260,9 @@ ggplot(trace_beta_df_long, aes(x = Iteration, y = value, color = word)) +
 
 
 # 更新値の推移を確認：gif画像 ---------------------------------------------------------
+
+# 利用パッケージ
+library(gganimate)
 
 ## 単語分布のパラメータ
 # 作図用のデータフレームを作成

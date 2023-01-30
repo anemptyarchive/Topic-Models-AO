@@ -14,22 +14,18 @@ DiagrammeR::grViz("
     node [shape = circle, fixedsize = ture, fontname = 'Times-Italic']
     
     alpha [label = '&alpha;']
-
     subgraph cluster_D{
       label = D
-
       theta [label = <<B>&theta;</B>@_{d}>]
       
       subgraph cluster_N{
         label = 'N@_{d}'
-
         z [label = 'z@_{dn}']
         w [label = 'w@_{dn}', style = filled, filledcolor = 'gray']
       }
       
       subgraph cluster_M{
         label = 'M@_{d}'
-        
         y [label = 'y@_{dm}']
         x [label = 'x@_{dm}', style = filled, filledcolor = 'gray']
       }
@@ -37,7 +33,6 @@ DiagrammeR::grViz("
     
     beta [label = '&beta;']
     gamma [label = '&gamma;']
-    
     subgraph cluster_K{
       label = K
       
@@ -66,22 +61,18 @@ DiagrammeR::grViz("
     node [shape = circle, fixedsize = ture, fontname = 'Times-Italic']
     
     alpha [label = '&alpha;']
-
     subgraph cluster_D{
       label = D
-      
       theta [label = <<B>&theta;</B>@_{d}>]
       
       subgraph cluster_N{
         label = 'N@_{d}'
-
         z [label = 'z@_{dn}']
         w [label = 'w@_{dn}', style = filled, filledcolor = 'gray']
       }
       
       subgraph cluster_M{
         label = 'M@_{d}'
-        
         y [label = 'y@_{dm}']
         x [label = 'x@_{dm}', style = filled, filledcolor = 'gray']
       }
@@ -89,10 +80,8 @@ DiagrammeR::grViz("
     
     beta [label = '&beta;']
     gamma [label = '&gamma;']
-    
     subgraph cluster_K{
       label = K
-      
       phi [label = <<B>&phi;</B>@_{k}>]
       psi [label = <<B>&psi;</B>@_{k}>]
     }
@@ -124,19 +113,16 @@ DiagrammeR::grViz("
     
     subgraph cluster_D{
       label = D
-      
       theta [label = <<B>&theta;</B>@_{d}>]
       
       subgraph cluster_N{
         label = 'N@_{d}'
-
         z [label = 'z@_{dn}']
         w [label = 'w@_{dn}', style = filled, filledcolor = 'gray']
       }
       
       subgraph cluster_M{
         label = 'M@_{d}'
-        
         y [label = 'y@_{dm}']
         r [label = 'r@_{dm}']
         x [label = 'x@_{dm}', style = filled, filledcolor = 'gray']
@@ -146,16 +132,13 @@ DiagrammeR::grViz("
     beta [label = '&beta;']
     gamma [label = '&gamma;']
     {rank = same; beta; gamma}
-    
     subgraph cluster_K{
       label = K
-      
       phi [label = <<B>&phi;</B>@_{k}>]
     }
     
     subgraph cluster_K1{
       label = 'K+1'
-      
       psi [label = <<B>&psi;</B>@_{k}>]
     }
     
@@ -181,8 +164,8 @@ DiagrammeR::grViz("
     node [shape = circle, fixedsize = ture, fontname = 'Times-Italic']
     
     alpha [label = '&alpha;']
-    subgraph cluster_A{
-      label = A
+    subgraph cluster_S{
+      label = S
       theta [label = <<B>&theta;</B>@_{s}>]
     }
     

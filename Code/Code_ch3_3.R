@@ -1,5 +1,5 @@
 
-# Chapter3.3 混合ユニグラムモデル：EMアルゴリズム(最尤推定) ----------------------------------------------------------------------
+# Ch3.3 混合ユニグラムモデル:EMアルゴリズム(最尤推定) ----------------------------------------------------------------------
 
 # 利用パッケージ
 library(tidyverse)
@@ -11,24 +11,25 @@ D <- 10
 # 語彙数
 V <- 20
 # 各文書における各語彙数
-N_dv <- matrix(sample(0:10, D * V, replace = TRUE), D, V)
+N_dv <- matrix(sample(0:25, D * V, replace = TRUE), D, V)
 
 
 # パラメータの初期設定 --------------------------------------------------------------
 
-# トピック数(K)を指定
-K <- 5
+# トピック数を指定
+K <- 4
 
-# 負担率(q_dk)の受け皿
+# 負担率の受け皿
 q_dk <- matrix(
   0, nrow = D, ncol = K, 
   dimnames = list(paste0("d=", 1:D), # 行名
                   paste0("k=", 1:K)) # 列名
 )
 
+
 ## トピック分布(theta)の初期値
 # ランダムに値を設定
-tmp_theta_k <- seq(0, 1, by = 0.01) %>% 
+tmp_theta_k <- seq(0.01, 1, by = 0.01) %>% 
   sample(size = K, replace = TRUE)
 
 # 正規化
@@ -37,9 +38,10 @@ theta_k <- tmp_theta_k / sum(tmp_theta_k)
 # 確認用の要素名
 names(theta_k) <- paste0("k=", 1:K)
 
+
 ## 単語分布(phi)の初期値
 # ランダムに値を設定
-tmp_phi_kv <- seq(0, 1, by = 0.01) %>% 
+tmp_phi_kv <- seq(0.01, 1, by = 0.01) %>% 
   sample(size = K * V, replace = TRUE) %>% 
   matrix(
     nrow = K, ncol = V, 
@@ -48,7 +50,7 @@ tmp_phi_kv <- seq(0, 1, by = 0.01) %>%
   )
 
 # 正規化
-phi_kv <- tmp_phi_kv / apply(tmp_phi_kv, 1, sum)
+phi_kv <- tmp_phi_kv / rowSums(tmp_phi_kv)
 
 
 # EMアルゴリズム(最尤推定) --------------------------------------------------------------------
@@ -84,8 +86,8 @@ for(i in 1:Iter){
     for(k in 1:K){ ## (各トピック)
       
       # 負担率の計算
-      term_k <- apply(t(phi_kv)^N_dv[d, ], 2, prod)
-      q_dk[d, k] <- theta_k[k] * term_k[k] / sum(theta_k * term_k)
+      term_k <- log(theta_k + 1e-7) + colSums(N_dv[d, ] * log(t(phi_kv + 1e-7)))
+      q_dk[d, k] <- exp(term_k[k] - min(term_k)) / sum(exp(term_k - min(term_k)))
       
       # トピック分布(theta)を更新
       new_theta_k[k] <- new_theta_k[k] + q_dk[d, k]
@@ -105,7 +107,7 @@ for(i in 1:Iter){
   
   # パラメータの正規化
   theta_k <- theta_k / sum(theta_k)
-  phi_kv  <- phi_kv / apply(phi_kv, 1, sum)
+  phi_kv  <- phi_kv / rowSums(phi_kv)
   
   # 推移の確認用
   trace_theta[, i + 1] <- theta_k
