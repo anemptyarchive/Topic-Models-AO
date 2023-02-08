@@ -1,5 +1,5 @@
 
-# Ch3.3 混合ユニグラムモデル:EMアルゴリズム(最尤推定) --------------------------
+# ch3.3 混合ユニグラムモデル:EMアルゴリズム(最尤推定) --------------------------
 
 # 利用パッケージ
 library(tidyverse)
@@ -186,7 +186,7 @@ for(i in 1:MaxIter){
     for(k in 1:K){ ## (各トピック)
       
       # 負担率qの計算:式(3.3)
-      log_term_k <- log(theta_k + 1e-7) + colSums(N_dv[d, ] * log(t(phi_kv + 1e-7))) # 分子
+      log_term_k <- log(theta_k + 1e-7) + colSums(N_dv[d, ] * log(t(phi_kv) + 1e-7)) # 分子
       log_term_k <- log_term_k - min(log_term_k) # アンダーフロー対策
       log_term_k <- log_term_k - max(log_term_k) # オーバーフロー対策
       q_dk[d, k] <- exp(log_term_k[k]) / sum(exp(log_term_k)) # 正規化
