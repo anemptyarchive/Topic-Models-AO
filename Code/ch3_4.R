@@ -145,12 +145,17 @@ ggplot() +
 
 # 変分ベイズ推定 -----------------------------------------------------------------
 
+### ・パラメータの初期化 -----
+
 # トピック数を指定
 K <- 4
 
 # 文書数と語彙数を取得
 D <- nrow(N_dv)
 V <- ncol(N_dv)
+
+# 文書ごとの単語数を計算
+N_d <- rowSums(N_dv)
 
 
 # 負担率qの初期化
@@ -170,16 +175,17 @@ beta_kv <- runif(n = K*V, min = 0.01, max = 2) |> # 範囲を指定
   matrix(nrow = K, ncol = V)
 
 
+### ・推論処理 -----
+
 # 試行回数を指定
 MaxIter <- 20
 
 # 推移の確認用の受け皿を作成
-trace_q_dki    <- array(NA, dim = c(D, K, MaxIter+1))
+trace_q_dki    <- array(NA, dim = c(D, K, MaxIter))
 trace_alpha_ki <- matrix(NA, nrow = K, ncol = MaxIter+1)
 trace_beta_kvi <- array(NA, dim = c(K, V, MaxIter+1))
 
 # 初期値を保存
-trace_q_dki[, , 1]    <- q_dk
 trace_alpha_ki[, 1]   <- alpha_k
 trace_beta_kvi[, , 1] <- beta_kv
 
@@ -191,22 +197,24 @@ for(i in 1:MaxIter) {
   new_beta_kv <- matrix(beta, nrow = K, ncol = V)
   
   for(d in 1:D){ ## (各文書)
+    
+    # (アンダーフロー対策用の)中間変数を初期化
+    log_q_k <- rep(NA, times = K)
+    
     for(k in 1:K){ ## (各トピック)
       
       # 負担率qの計算:式(3.22)
       term_alpha <- digamma(alpha_k[k]) - digamma(sum(alpha_k))
       term_beta  <- sum(N_dv[d, ] * digamma(beta_kv[k, ])) - N_d[d] * digamma(sum(beta_kv[k, ]))
-      q_dk[d, k] <- exp(term_alpha + term_beta)
+      log_q_k[k] <- term_alpha + term_beta
       
     } ## (各トピック:続く)
     
     # 負担率qの正規化
-    if(all(q_dk[d, ] == 0)) {
-      # 全ての要素が0の場合は等確率に設定
-      q_dk[d, ] <- 1 / K
-    } else {
-      q_dk[d, ] <- q_dk[d, ] / sum(q_dk[d, ])
-    }
+    log_q_k <- log_q_k - min(log_q_k) # アンダーフロー対策
+    log_q_k <- log_q_k - max(log_q_k) # オーバーフロー対策
+    #if(all(log_q_k == 0)) log_q_k <- 1 / K # 全ての要素が0の場合は等確率に設定
+    q_dk[d, ] <- exp(log_q_k) / sum(exp(log_q_k))
     
     for(k in 1:K) { ## (各トピック:続き)
       
@@ -227,7 +235,7 @@ for(i in 1:MaxIter) {
   beta_kv <- new_beta_kv
   
   # i回目の更新値を保存
-  trace_q_dki[, , i+1]    <- q_dk
+  trace_q_dki[, , i]      <- q_dk
   trace_alpha_ki[, i+1]   <- alpha_k
   trace_beta_kvi[, , i+1] <- beta_kv
   
@@ -398,7 +406,7 @@ gganimate::animate(plot = anime_word_graph, nframes = MaxIter+1, fps = 5, width 
 
 # 作図用のデータフレームを作成
 trace_response_df <- trace_q_dki |> 
-  tibble::as_tibble(.name_repair = ~as.character(1:(K*(MaxIter+1)))) |> 
+  tibble::as_tibble(.name_repair = ~as.character(1:(K*MaxIter))) |> 
   tibble::add_column(
     document = factor(1:D) # 文書番号
   ) |> 
@@ -411,7 +419,7 @@ trace_response_df <- trace_q_dki |>
   dplyr::arrange(ki, document) |> # 番号列の追加用
   dplyr::bind_cols(
     tidyr::expand_grid(
-      iteration = 0:MaxIter, # 試行番号
+      iteration = 1:MaxIter, # 試行番号
       topic = factor(1:K), # トピック番号
       tmp_document = 1:D
     ) # 試行ごとにトピック番号を複製
@@ -477,7 +485,7 @@ ggplot() +
   guides(color = "none", fill = "none", 
          linetype = guide_legend(override.aes = list(color = c("black", "black"), fill = c("white", "white")))) + # 凡例の体裁:(凡例表示用)
   labs(title = "Topic Distribution", 
-       subtitle = "EM Algorithm", 
+       subtitle = "Variational Bayesian Estimation", 
        x = "k", y = expression(theta[k]))
 
 
@@ -506,7 +514,7 @@ ggplot() +
   guides(color = "none", fill = "none", 
          linetype = guide_legend(override.aes = list(color = c("black", "black"), fill = c("white", "white")))) + # 凡例の体裁:(凡例表示用)
   labs(title = "Word Distribution", 
-       subtitle = "EM Algorithm", 
+       subtitle = "Variational Bayesian Estimation", 
        x = "v", y = expression(phi[kv]))
 
 
