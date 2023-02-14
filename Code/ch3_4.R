@@ -128,7 +128,7 @@ tmp_word_df <- tidyr::expand_grid(
   dplyr::filter(topic == z_d[document]) # 割り当てられたトピックを抽出
 tmp_word_df
 
-# 度数と単語分布を比較
+# 相対度数と真の単語分布を比較
 ggplot() + 
   geom_bar(data = freq_df, mapping = aes(x = vocabulary, y = relative_frequency, fill = vocabulary, linetype = "sample"), 
            stat = "identity", alpha = 0.5) + # 出現度数
@@ -197,27 +197,16 @@ for(i in 1:MaxIter) {
   new_beta_kv <- matrix(beta, nrow = K, ncol = V)
   
   for(d in 1:D){ ## (各文書)
-    
-    # (アンダーフロー対策用の)中間変数を初期化
-    log_q_k <- rep(NA, times = K)
-    
     for(k in 1:K){ ## (各トピック)
       
       # 負担率qの計算:式(3.22)
-      term_alpha <- digamma(alpha_k[k]) - digamma(sum(alpha_k))
-      term_beta  <- sum(N_dv[d, ] * digamma(beta_kv[k, ])) - N_d[d] * digamma(sum(beta_kv[k, ]))
-      log_q_k[k] <- term_alpha + term_beta
-      
-    } ## (各トピック:続く)
-    
-    # 負担率qの正規化
-    log_q_k <- log_q_k - min(log_q_k) # アンダーフロー対策
-    log_q_k <- log_q_k - max(log_q_k) # オーバーフロー対策
-    #if(all(log_q_k == 0)) log_q_k <- 1 / K # 全ての要素が0の場合は等確率に設定
-    q_dk[d, ] <- exp(log_q_k) / sum(exp(log_q_k))
-    
-    for(k in 1:K) { ## (各トピック:続き)
-      
+      term_alpha_k <- digamma(alpha_k) - digamma(sum(alpha_k))
+      term_beta_k  <- colSums(N_dv[d, ] * digamma(t(beta_kv))) - N_d[d] * digamma(rowSums(beta_kv))
+      log_q_k      <- term_alpha_k + term_beta_k
+      log_q_k    <- log_q_k - min(log_q_k) # アンダーフロー対策
+      log_q_k    <- log_q_k - max(log_q_k) # オーバーフロー対策
+      q_dk[d, k] <- exp(log_q_k[k]) / sum(exp(log_q_k)) # 正規化
+
       # トピック分布θの変分事後分布のパラメータαの計算:式(3.19')
       new_alpha_k[k] <- new_alpha_k[k] + q_dk[d, k]
       
@@ -486,7 +475,7 @@ ggplot() +
          linetype = guide_legend(override.aes = list(color = c("black", "black"), fill = c("white", "white")))) + # 凡例の体裁:(凡例表示用)
   labs(title = "Topic Distribution", 
        subtitle = "Variational Bayesian Estimation", 
-       x = "k", y = expression(theta[k]))
+       x = "k", y = expression(E(theta[k])))
 
 
 # 作図用のデータフレームを作成
@@ -515,7 +504,7 @@ ggplot() +
          linetype = guide_legend(override.aes = list(color = c("black", "black"), fill = c("white", "white")))) + # 凡例の体裁:(凡例表示用)
   labs(title = "Word Distribution", 
        subtitle = "Variational Bayesian Estimation", 
-       x = "v", y = expression(phi[kv]))
+       x = "v", y = expression(E(phi[kv])))
 
 
 # 作図用のデータフレームを作成
@@ -556,7 +545,7 @@ anime_topic_graph <- ggplot() +
          linetype = guide_legend(override.aes = list(color = c("black", "black"), fill = c("white", "white")))) + # 凡例の体裁:(凡例表示用)
   labs(title = "Topic Distribution", 
        subtitle = "iteration = {current_frame}", 
-       x = "k", y = expression(theta[k]))
+       x = "k", y = expression(E(theta[k])))
 
 # gif画像を作成
 gganimate::animate(plot = anime_topic_graph, nframes = MaxIter+1, fps = 5, width = 700, height = 450)
@@ -610,7 +599,7 @@ anime_word_graph <- ggplot() +
          linetype = guide_legend(override.aes = list(color = c("black", "black"), fill = c("white", "white")))) + # 凡例の体裁:(凡例表示用)
   labs(title = "Word Distribution", 
        subtitle = "iteration = {current_frame}", 
-       x = "v", y = expression(phi[kv]))
+       x = "v", y = expression(E(phi[kv])))
 
 # gif画像を作成
 gganimate::animate(plot = anime_word_graph, nframes = MaxIter+1, fps = 5, width = 900, height = 600)
