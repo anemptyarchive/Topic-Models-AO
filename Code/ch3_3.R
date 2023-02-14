@@ -12,137 +12,12 @@ library(ggplot2)
 
 # 文書データの簡易生成 --------------------------------------------------------------
 
-### ・真の分布の設定 -----
-
-# 文書数を指定
-D <- 20
-
-# 語彙数を指定
-V <- 26
-
-# トピック数を指定
-K <- 4
-
-
-# 真のトピック分布を生成
-theta_true_k <- MCMCpack::rdirichlet(n = 1, alpha = rep(1, times = K)) |> 
-  as.vector()
-
-# 作図用のデータフレームを作成
-true_topic_df <- tibble::tibble(
-  topic = factor(1:K), # トピック番号
-  probability = theta_true_k # 割り当て確率
-)
-
-# 真のトピック分布を作図
-ggplot() + 
-  geom_bar(data = true_topic_df, mapping = aes(x = topic, y = probability, fill = topic), 
-           stat = "identity", show.legend = FALSE) + # トピック分布
-  labs(title = "Topic Distribution", 
-       subtitle = "truth", 
-       x = "k", y = expression(theta[k]))
-
-
-# 真の単語分布を生成
-phi_true_kv <- MCMCpack::rdirichlet(n = K, alpha = rep(1, times = V))
-
-# 作図用のデータフレームを作成
-true_word_df <- phi_true_kv |> 
-  tibble::as_tibble() |> 
-  tibble::add_column(
-    topic = factor(1:K) # トピック番号
-  ) |> 
-  tidyr::pivot_longer(
-    cols = !topic, 
-    names_to = "vocabulary", # 列名を語彙番号に変換
-    names_prefix = "V", 
-    names_ptypes = list(vocabulary = factor()), 
-    values_to = "probability" # 出現確率列をまとめる
-  )
-
-# 真の単語分布を作図
-ggplot() + 
-  geom_bar(data = true_word_df, mapping = aes(x = vocabulary, y = probability, fill = vocabulary), 
-           stat = "identity", show.legend = FALSE) + # 単語分布
-  facet_wrap(topic ~ ., labeller = label_bquote(k==.(topic)), scales = "free_x") + # 分割
-  labs(title = "Word Distribution", 
-       subtitle = "truth", 
-       x = "v", y = expression(phi[kv]))
-
-
-### ・文書データの生成 -----
-
-# 文書を生成
-z_d  <- rep(NA, times = D)
-N_d  <- rep(NA, times = D)
-N_dv <- matrix(NA, nrow = D, ncol = V)
-for(d in 1:D) {
-  
-  # 文書dのトピックを生成
-  one_hot_k <- rmultinom(n = 1, size = 1, prob = theta_true_k) |> 
-    as.vector()
-  k <- which(one_hot_k == 1) # トピック番号を抽出
-  z_d[d] <- k
-  
-  # 単語数を決定
-  N_d[d] <- sample(100:200, size = 1) # 範囲を指定
-  
-  # トピックkに従い単語を生成
-  N_dv[d, ] <- rmultinom(n = 1, size = N_d[d], prob = phi_true_kv[k, ]) |> 
-    as.vector()
-}
-
-# 作図用のデータフレームを作成
-freq_df <- N_dv |> 
-  tibble::as_tibble() |> 
-  tibble::add_column(
-    document = factor(1:D), # 文書番号
-    word_count = N_d, # 単語数
-    topic = factor(z_d) # 割り当てトピック
-  ) |> 
-  tidyr::pivot_longer(
-    cols = !c(document, word_count, topic), 
-    names_to = "vocabulary", # 列名を語彙番号に変換
-    names_prefix = "V", 
-    names_ptypes = list(vocabulary = factor()), 
-    values_to = "frequency" # 出現度数列をまとめる
-  ) |> 
-  dplyr::mutate(
-    relative_frequency = frequency / N_d[d] # 相対度数
-  )
-
-# 度数を作図
-ggplot() + 
-  geom_bar(data = freq_df, mapping = aes(x = vocabulary, y = frequency, fill = vocabulary), 
-           stat = "identity", show.legend = FALSE) + # 出現度数
-  facet_wrap(document ~ ., labeller = label_bquote(list(d==.(document), N[d]==.(N_d[document]))), scales = "free_x") + # 分割
-  labs(title = "Word Frequency", 
-       x = "v", y = expression(N[dv]))
-
-# 真のトピック分布を複製
-tmp_word_df <- tidyr::expand_grid(
-  document = factor(1:D), # 文書番号
-  true_word_df
-) |> # 文書数分にトピック分布を複製
-  dplyr::filter(topic == z_d[document]) # 割り当てられたトピックを抽出
-tmp_word_df
-
-# 度数と単語分布を比較
-ggplot() + 
-  geom_bar(data = freq_df, mapping = aes(x = vocabulary, y = relative_frequency, fill = vocabulary, linetype = "sample"), 
-           stat = "identity", alpha = 0.5) + # 出現度数
-  geom_bar(data = tmp_word_df, mapping = aes(x = vocabulary, y = probability, color = vocabulary, linetype = "truth"), 
-           stat = "identity", alpha = 0) + # 単語分布
-  facet_wrap(document ~ ., labeller = label_bquote(list(d==.(document), z[d]==.(z_d[document]))), scales = "free_x") + # 分割
-  scale_x_discrete(breaks = 1:V, labels = LETTERS[1:V]) + # x軸目盛:(雰囲気用の演出)
-  scale_linetype_manual(breaks = c("sample", "truth"), values = c("solid", "dashed"), name = "distribution") + # 線の種類:(凡例表示用)
-  guides(color = "none", fill = "none", 
-         linetype = guide_legend(override.aes = list(color = c("black", "black"), fill = c("white", "white")))) + # 凡例の体裁:(凡例表示用)
-  labs(title = "Word Frequency", 
-       x = "v", y = expression(frac(N[dv], N[d])))
+## ch3_1.Rを参照
 
 
 # EMアルゴリズム(最尤推定) --------------------------------------------------------------------
+
+### ・パラメータの初期化 -----
 
 # トピック数を指定
 K <- 4
@@ -151,9 +26,6 @@ K <- 4
 D <- nrow(N_dv)
 V <- ncol(N_dv)
 
-
-# 試行回数を指定
-MaxIter <- 20
 
 # 負担率qの初期化
 q_dk <- matrix(0, nrow = D, ncol = K)
@@ -166,6 +38,12 @@ theta_k     <- tmp_theta_k / sum(tmp_theta_k) # 正規化
 tmp_phi_kv <- runif(n = K*V, min = 0, max = 1) |> 
   matrix(nrow = K, ncol = V)
 phi_kv     <- tmp_phi_kv / rowSums(tmp_phi_kv) # 正規化
+
+
+### ・推論処理 -----
+
+# 試行回数を指定
+MaxIter <- 20
 
 # 推移の確認用の受け皿を作成
 trace_theta_ki <- matrix(NA, nrow = K, ncol = MaxIter+1)
@@ -287,6 +165,18 @@ ggplot() +
        color = "k", 
        x = "iteration", y = expression(theta[k]))
 
+# 推定トピック分布のアニメーションを作図
+anime_topic_graph <- ggplot() + 
+  geom_bar(data = trace_topic_df, mapping = aes(x = topic, y = probability, fill = topic), 
+           stat = "identity", show.legend = FALSE) + # トピック分布
+  gganimate::transition_manual(frames = iteration) + # フレーム
+  labs(title = "Topic Distribution", 
+       subtitle = "iteration = {current_frame}", 
+       x = "k", y = expression(theta[k]))
+
+# gif画像を作成
+gganimate::animate(plot = anime_topic_graph, nframes = MaxIter+1, fps = 5, width = 600, height = 450)
+
 
 # 作図用のデータフレームを作成
 trace_word_df <- trace_phi_kvi |> 
@@ -321,19 +211,6 @@ ggplot() +
        color = "v", 
        x = "iteration", y = expression(phi[kv]))
 
-
-# 推定トピック分布のアニメーションを作図
-anime_topic_graph <- ggplot() + 
-  geom_bar(data = trace_topic_df, mapping = aes(x = topic, y = probability, fill = topic), 
-           stat = "identity", show.legend = FALSE) + # トピック分布
-  gganimate::transition_manual(frames = iteration) + # フレーム
-  labs(title = "Topic Distribution", 
-       subtitle = "iteration = {current_frame}", 
-       x = "k", y = expression(theta[k]))
-
-# gif画像を作成
-gganimate::animate(plot = anime_topic_graph, nframes = MaxIter+1, fps = 5, width = 600, height = 450)
-
 # 推定単語分布のアニメーションを作図
 anime_word_graph <- ggplot() + 
   geom_bar(data = trace_word_df, mapping = aes(x = vocabulary, y = probability, fill = vocabulary), 
@@ -350,30 +227,32 @@ gganimate::animate(plot = anime_word_graph, nframes = MaxIter+1, fps = 5, width 
 
 ### ・真の分布との比較 -----
 
-# KLダイバージェンスを計算
+# インデックスの組み合わせを作成してKL情報量を計算
 kl_df <- tidyr::expand_grid(
   group = 1:gamma(K+1), # 組み合わせ番号
-  k = 1:K # 真のトピック番号
+  k = factor(1:K) # 真の分布・並べ替え後のトピック番号
 ) |> # トピック番号を複製
   tibble::add_column(
-    j = gtools::permutations(n = K, r = K, v = 1:K) |> 
+    j = gtools::permutations(n = K, r = K, v = 1:K) |> # トピック番号の順列を作成
       t() |> 
-      as.vector() # トピック番号の順列組み合わせ
+      as.vector() |> 
+      factor() # 元のトピック番号・並べ替え用のインデックス
   ) |> 
   dplyr::group_by(group) |> # 組み合わせごとの計算用
   dplyr::mutate(
     # KL情報量を計算
-    kl_topic = sum(theta_true_k * (log(theta_true_k) - log(theta_k[j]))), 
-    kl_word = sum(phi_true_kv * (log(phi_true_kv) - log(phi_kv[j, ]))), 
-    kl = kl_topic + kl_word/V
+    kl_topic = sum(theta_true_k * (log(theta_true_k) - log(theta_k[j]))), # トピック分布のKL情報量
+    kl_word = sum(phi_true_kv * (log(phi_true_kv) - log(phi_kv[j, ]))), # 単語分布のKL情報量
+    kl_sum = kl_topic + kl_word/V
   ) |> 
   dplyr::ungroup() |> 
-  dplyr::arrange(kl) # KL情報量の小さい順に並び替え
+  dplyr::arrange(kl_sum, k) # 当て嵌まりが良い順に並べ替え
 
 # KL情報量が最小となるトピック番号を抽出
 adapt_idx <- kl_df |> 
   dplyr::slice_head(n = K) |> # 最小の組み合わせを抽出
-  dplyr::pull(j) # ベクトルに変換
+  dplyr::pull(j) |> # 列をベクトルに変換
+  as.numeric() # 数値に変換
 
 
 # 作図用のデータフレームを作成

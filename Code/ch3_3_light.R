@@ -10,10 +10,12 @@ library(ggplot2)
 
 # 文書データの簡易生成 --------------------------------------------------------------
 
-## ch3_3.Rを参照
+## ch3_1.Rを参照
 
 
 # EMアルゴリズム(最尤推定) --------------------------------------------------------------------
+
+### ・パラメータの初期化 -----
 
 # トピック数を指定
 K <- 4
@@ -22,9 +24,6 @@ K <- 4
 D <- nrow(N_dv)
 V <- ncol(N_dv)
 
-
-# 試行回数を指定
-MaxIter <- 20
 
 # 負担率qの初期化
 q_dk <- matrix(0, nrow = D, ncol = K)
@@ -37,6 +36,12 @@ theta_k <- runif(n = K, min = 0, max = 1) |>
 phi_kv <- runif(n = K*V, min = 0, max = 1) |> 
   matrix(nrow = K, ncol = V) |> 
   (\(mat) {mat / rowSums(mat)})() # 正規化
+
+
+### ・推論処理 -----
+
+# 試行回数を指定
+MaxIter <- 20
 
 # 推移の確認用の受け皿を作成
 trace_theta_ki <- matrix(NA, nrow = K, ncol = MaxIter+1)
