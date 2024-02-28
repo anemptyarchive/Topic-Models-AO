@@ -352,4 +352,26 @@ plt.show()
 
 # %%
 
+### トピック集合の推移の可視化
 
+# 配列に変換
+trace_z_di = np.array(trace_z).T
+
+# グラフサイズを設定
+axis_size = trace_z_di.max()+1 + 1
+
+# トピックの推移を作図
+fig, ax = plt.subplots(figsize=(15, 15), facecolor='white', 
+                       subplot_kw={'projection': '3d'})
+for d in range(D):
+    ax.plot(np.arange(max_iter), np.repeat(d+1, repeats=max_iter), trace_z_di[d]+1, 
+            color=cmap(z_d[d]%cnum)) # トピック番号
+ax.set_zlim(zmin=0, zmax=axis_size)
+ax.set_xlabel('iteration')
+ax.set_ylabel('document ($d$)')
+ax.set_zlabel('topic ($z_d$)')
+fig.suptitle('Topic assigned to document', fontsize=20)
+ax.view_init(elev=5, azim=300) # 表示アングル
+plt.show()
+
+# %%
