@@ -24,11 +24,11 @@ true_alpha = 2.0 # トピック分布
 true_beta  = 1.0 # 語彙分布
 
 # トピック数を初期化
-true_K   = 0
-true_D_k = np.zeros(shape=true_K) # 各トピックが割り当てられた文書数
+true_K = 0
 
 # 受け皿を初期化
 true_z_d = np.tile(np.nan, reps=D) # 各文書のトピック
+true_D_k = np.zeros(shape=true_K) # 各トピックが割り当てられた文書数
 N_d  = np.zeros(shape=D, dtype='int') # 各文書の単語数
 N_dv = np.zeros(shape=(D, V), dtype='int') # 各文書の語彙ごとの単語数
 
@@ -39,8 +39,8 @@ for d in range(D): # 文書ごと
     if true_K == 0: # (初回の場合)
         true_theta_k = np.array([1.0])
     else:
-        true_theta_k = np.array(
-            [true_D_k[k] / (d + true_alpha) for k in range(true_K)] + [true_alpha / (d + true_alpha)] # 既存・新規の確率を結合
+        true_theta_k = np.hstack(
+            [true_D_k / (d + true_alpha)] + [true_alpha / (d + true_alpha)] # 既存・新規の確率を結合
         )
         true_theta_k /= true_theta_k.sum() # 正規化
     
@@ -85,8 +85,8 @@ for d in range(D): # 文書ごと
     # 途中経過を表示
     print(
         'document: ' + str(d+1) + ', ' + 
-        'words: ' + str(N_d[d]) + ', ' + 
-        'topic: ' + str(k+1)
+        'words: '    + str(N_d[d]) + ', ' + 
+        'topic: '    + str(k+1)
     )
 
 # 作図用に変換
@@ -98,7 +98,7 @@ true_z_d = true_z_d.astype('int')
 
 # グラフサイズを設定
 u = 5
-axis_size = (np.ceil(N_dv.max() /u)*u).astype('int') # u単位で切り上げ
+axis_size = np.ceil(N_dv.max() /u)*u # u単位で切り上げ
 
 # サブプロットの列数を指定:(1 < 列数 < D)
 col_num = 5
@@ -121,49 +121,52 @@ for d in range(D):
     c = d % col_num
     ax = axes[r, c]
 
-    # ラベル用の文字列を作成
-    doc_label = 'document ($d$): '+str(d+1) + ', true topic ($k$): '+str(true_z_d[d]+1)
+    # トピック番号を取得
+    k = true_z_d[d]
     
     # 語彙頻度を描画
     ax.bar(x=np.arange(stop=V)+1, height=N_dv[d], 
-           color=cmap(true_z_d[d]%color_num)) # 頻度
+           color=cmap(k%color_num)) # 頻度
     ax.set_ylim(ymin=0, ymax=axis_size)
-    ax.set_title(doc_label, loc='left')
+    ax.set_xlabel('vocabulary ($v$)')
+    ax.set_ylabel('frequency ($N_{dv}$)')
+    ax.set_title('$d = {}, k = {}$'.format(d+1, k+1), loc='left')
     ax.grid()
 
 # 余りを非表示化
 for i in range(c+1, col_num):
     axes[r, i].axis('off')
 
-fig.supxlabel('vocabulary ($v$)')
-fig.supylabel('frequency ($N_{dv}$)')
-fig.suptitle('document data', fontsize=20)
+fig.supxlabel('document ($d$)')
+fig.supylabel('document ($d$)')
+fig.suptitle('document data (true topic)', fontsize=20)
+
 plt.show()
 
 # %%
 
 ### 真のトピック分布の可視化
 
-# 最後に新規トピックが割り当てられた場合は確率を追加
-if len(true_theta_k) == true_K:
-    true_theta_k = np.array(
-        [true_D_k[k] / (d + true_alpha) for k in range(true_K)] + [true_alpha / (d + true_alpha)] # 既存・新規の確率を結合
-    )
-    true_theta_k /= true_theta_k.sum() # 正規化
+# D+1番目の文書のトピック分布を計算
+true_D_k = np.array([np.sum(true_z_d == k) for k in range(true_K)])
+true_theta_k = np.hstack(
+    [true_D_k / (D + true_alpha)] + [true_alpha / (D + true_alpha)] # 既存・新規の確率を結合
+)
+true_theta_k /= true_theta_k.sum() # 正規化
 
 # グラフサイズを設定
-u = 0.01
+u = 0.1
 axis_size = np.ceil(true_theta_k.max() /u)*u # u単位で切り上げ
 
 # トピック分布を作図
 fig, ax = plt.subplots(figsize=(8, 6), dpi=100, facecolor='white')
 ax.bar(x=np.arange(stop=true_K+1)+1, height=true_theta_k, 
        color=[cmap(k%color_num) for k in range(true_K)]+['whitesmoke'], 
-       edgecolor=['white']*true_K+['black']) # 確率
+       edgecolor='black', linestyle='dashed', linewidth=[0]*true_K+[1]) # 確率
 ax.set_ylim(ymin=0, ymax=axis_size)
 ax.set_xlabel('topic ($k$)')
 ax.set_ylabel('probability ($\\theta_k$)')
-ax.set_title('$\\alpha = {}, K = {}$'.format(true_alpha, true_K), loc='left')
+ax.set_title('$K = {}, \\alpha = {}$'.format(true_K, true_alpha), loc='left')
 fig.suptitle('topic distribution (truth)', fontsize=20)
 ax.grid()
 plt.show()
@@ -174,8 +177,8 @@ plt.show()
 
 # グラフサイズを設定
 u = 5
-max_freq = np.ceil(true_D_k.max() /u)*u # u単位で切り上げ
-max_prob = 1.0
+axis_freq_max = np.ceil(true_D_k.max() /u)*u # u単位で切り上げ
+axis_prob_max = 1.0
 
 # グラフオブジェクトを初期化
 fig, axes = plt.subplots(nrows=1, ncols=2, constrained_layout=True, 
@@ -186,15 +189,14 @@ fig.suptitle('topic distribution (truth)', fontsize=20)
 def update(d):
     
     # 前フレームのグラフを初期化
-    #plt.cla()
     [ax.cla() for ax in axes]
-
+    
     # トピック数を設定
-    if d == 0:
+    if d == 0: # (初回の場合)
         tmp_K = 0
     else:
         tmp_K = true_z_d[:d].max() + 1
-
+    
     # トピックごとの文書数を集計
     tmp_D_k = np.array([np.sum(true_z_d[:d] == k) for k in range(true_K)])
     
@@ -202,19 +204,19 @@ def update(d):
     ax = axes[0]
     ax.bar(x=np.arange(stop=true_K)+1, height=tmp_D_k, 
            color=[cmap(k%color_num) for k in range(true_K)]) # 文書数
-    ax.set_xlim(xmin=0, xmax=true_K+1)
-    ax.set_ylim(ymin=0, ymax=max_freq)
+    ax.set_xlim(xmin=0, xmax=true_K+2)
+    ax.set_ylim(ymin=0, ymax=axis_freq_max)
     ax.set_xlabel('topic ($k$)')
     ax.set_ylabel('frequency ($D_k$)')
-    ax.set_title('$d = {}, K = {}$'.format(d, tmp_K), loc='left')
+    ax.set_title('$D = {}, K = {}$'.format(d, tmp_K), loc='left')
     ax.grid()
 
-    # トピック分布を生成
+    # トピック分布を計算
     if tmp_K == 0: # (初回の場合)
         tmp_theta_k = np.array([1.0])
     else:
-        tmp_theta_k = np.array(
-            [tmp_D_k[k] / (d + true_alpha) for k in range(tmp_K)] + [true_alpha / (d + true_alpha)] # 既存・新規の確率を結合
+        tmp_theta_k = np.hstack(
+            [tmp_D_k[:tmp_K] / (d + true_alpha)] + [true_alpha / (d + true_alpha)] # 既存・新規の確率を結合
         )
         tmp_theta_k /= tmp_theta_k.sum() # 正規化
     
@@ -222,9 +224,9 @@ def update(d):
     ax = axes[1]
     ax.bar(x=np.arange(stop=tmp_K+1)+1, height=tmp_theta_k, 
            color=[cmap(k%color_num) for k in range(tmp_K)]+['whitesmoke'], 
-           edgecolor=['white']*tmp_K+['black']) # 確率
+           edgecolor='black', linestyle='dashed', linewidth=[0]*tmp_K+[1]) # 確率
     ax.set_xlim(xmin=0, xmax=true_K+2)
-    ax.set_ylim(ymin=0, ymax=max_prob)
+    ax.set_ylim(ymin=0, ymax=axis_prob_max)
     ax.set_xlabel('topic ($k$)')
     ax.set_ylabel('probability ($\\theta_k$)')
     ax.set_title('$\\alpha = {}$'.format(true_alpha), loc='left')
@@ -264,19 +266,21 @@ for k in range(true_K):
     c = k % col_num
     ax = axes[r, c]
 
-    # 分布を描画
-    ax.bar(x=np.arange(start=1, stop=V+1), height=true_phi_kv[k], 
+    # 語彙分布を描画
+    ax.bar(x=np.arange(stop=V)+1, height=true_phi_kv[k], 
            color=cmap(k%color_num)) # 確率
     ax.set_ylim(ymin=0, ymax=axis_size)
-    ax.set_title('topic ($k$): '+str(k+1), loc='left')
+    ax.set_xlabel('vocabulary ($v$)')
+    ax.set_ylabel('probability ($\phi_{kv}$)')
+    ax.set_title('$k = {}$'.format(k+1), loc='left')
     ax.grid()
 
 # 余りを非表示化
 for i in range(c+1, col_num):
     axes[r, i].axis('off')
 
-fig.supxlabel('vocabulary ($v$)')
-fig.supylabel('probability ($\phi_{kv}$)')
+fig.supxlabel('topic ($k$)')
+fig.supylabel('topic ($k$)')
 fig.suptitle('word distribution (truth)', fontsize=20)
 plt.show()
 
@@ -294,8 +298,8 @@ V = N_dv.shape[1]
 N_d = N_dv.sum(axis=1)
 
 # ハイパーパラメータを指定
-alpha = 2.0
-beta  = 2.0
+alpha = 2.0 # トピック分布
+beta  = 2.0 # 語彙分布
 
 # トピック数を初期化
 K = 0
@@ -377,13 +381,16 @@ for i in range(max_iter):
     # 途中経過を表示
     print('iteration: '+str(i+1) + ', K = '+str(K))
 
+# 作図用に整数型に変換
+z_d = z_d.astype('int')
+
 # %%
     
 ### トピック集合の可視化
 
 # グラフサイズを設定
 u = 5
-axis_size = (np.ceil(N_dv.max() /u)*u).astype('int') # u単位で切り上げ
+axis_size = np.ceil(N_dv.max() /u)*u # u単位で切り上げ
 
 # サブプロットの列数を指定:(1 < 列数 < D)
 col_num = 5
@@ -406,23 +413,25 @@ for d in range(D):
     c = d % col_num
     ax = axes[r, c]
 
-    # ラベル用の文字列を作成
-    doc_label = 'document ($d$): '+str(d+1) + ', topic ($k$): '+str(z_d[d]+1)
+    # トピック番号を取得
+    k = true_z_d[d]
     
     # 語彙頻度を描画
-    ax.bar(x=np.arange(start=1, stop=V+1), height=N_dv[d], 
-           color=cmap(z_d[d].astype('int')%color_num)) # 頻度
+    ax.bar(x=np.arange(stop=V)+1, height=N_dv[d], 
+           color=cmap(k%color_num)) # 頻度
     ax.set_ylim(ymin=0, ymax=axis_size)
-    ax.set_title(doc_label, loc='left')
+    ax.set_xlabel('vocabulary ($v$)')
+    ax.set_ylabel('frequency ($N_{dv}$)')
+    ax.set_title('$d = {}, k = {}$'.format(d+1, k+1), loc='left')
     ax.grid()
 
 # 余りを非表示化
 for i in range(c+1, col_num):
     axes[r, i].axis('off')
 
-fig.supxlabel('vocabulary ($v$)')
-fig.supylabel('frequency ($N_{dv}$)')
-fig.suptitle('document data', fontsize=20)
+fig.supxlabel('document ($d$)')
+fig.supylabel('document ($d$)')
+fig.suptitle('document data (estimated topic)', fontsize=20)
 plt.show()
 
 # %%
@@ -433,7 +442,8 @@ plt.show()
 trace_z_di = np.array(trace_z_lt).T
 
 # グラフサイズを設定
-axis_size = trace_z_di.max()+1 + 1
+u = 1
+axis_size = trace_z_di.max()+1 + u # 余白uを追加
 
 # トピックの推移を作図
 fig, ax = plt.subplots(figsize=(15, 15), dpi=100, facecolor='white', 
