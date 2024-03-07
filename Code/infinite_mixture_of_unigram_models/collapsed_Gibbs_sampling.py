@@ -28,8 +28,8 @@ true_K = 0
 
 # 受け皿を初期化
 true_z_d = np.tile(np.nan, reps=D) # 各文書のトピック
-true_D_k = np.zeros(shape=true_K) # 各トピックが割り当てられた文書数
-N_d  = np.zeros(shape=D, dtype='int') # 各文書の単語数
+true_D_k = np.zeros(shape=true_K)  # 各トピックが割り当てられた文書数
+N_d  = np.zeros(shape=D, dtype='int')      # 各文書の単語数
 N_dv = np.zeros(shape=(D, V), dtype='int') # 各文書の語彙ごとの単語数
 
 # 文書データを生成
@@ -39,10 +39,7 @@ for d in range(D): # 文書ごと
     if true_K == 0: # (初回の場合)
         true_theta_k = np.array([1.0])
     else:
-        true_theta_k = np.hstack(
-            [true_D_k / (d + true_alpha)] + [true_alpha / (d + true_alpha)] # 既存・新規の確率を結合
-        )
-        true_theta_k /= true_theta_k.sum() # 正規化
+        true_theta_k  = np.hstack([true_D_k, true_alpha]) / (d + true_alpha) # 既存・新規の確率を結合
     
     # トピックを生成
     onehot_k = np.random.multinomial(n=1, pvals=true_theta_k, size=1).reshape(true_K+1) # one-hot符号
@@ -63,7 +60,7 @@ for d in range(D): # 文書ごと
             true_phi_kv = np.random.dirichlet(alpha=np.repeat(true_beta, repeats=V), size=1)
         else:
             true_phi_kv = np.vstack(
-                [true_phi_kv] + [np.random.dirichlet(alpha=np.repeat(true_beta, repeats=V), size=1)] # 既存・新規の確率を結合
+                [true_phi_kv, np.random.dirichlet(alpha=np.repeat(true_beta, repeats=V), size=1)] # 既存・新規の確率を結合
             )
     
     # 割り当て数をカウント

@@ -32,9 +32,9 @@ true_K = 0
 # 受け皿を初期化
 true_c_dic = {} # 各単語のテーブル
 true_z_dic = {} # 各テーブルのトピック
-true_T_k = np.zeros(shape=true_K) # 各トピックが割り当てられたテーブル数
+true_T_k = np.zeros(shape=true_K)         # 各トピックが割り当てられたテーブル数
 true_T_d = np.zeros(shape=D, dtype='int') # 各文書のテーブル数
-N_d  = np.zeros(shape=D, dtype='int') # 各文書の単語数
+N_d  = np.zeros(shape=D, dtype='int')      # 各文書の単語数
 N_dv = np.zeros(shape=(D, V), dtype='int') # 各文書の語彙ごとの単語数
 doc_dic = {} # 文書データ
 
@@ -59,10 +59,7 @@ for d in range(D): # 文書ごと
         if tmp_T == 0: # (初回の場合)
             true_tau_t = np.array([1.0])
         else:
-            true_tau_t = np.hstack(
-                [tmp_M_t[:tmp_T] / (n + true_gamma)] + [true_gamma / (n + true_gamma)] # 既存・新規の確率を結合
-            )
-            true_tau_t /= true_tau_t.sum() # 正規化
+            true_tau_t  = np.hstack([tmp_M_t, true_gamma]) / (n + true_gamma) # 既存・新規の確率を結合
         
         # テーブルを生成
         onehot_t = np.random.multinomial(n=1, pvals=true_tau_t, size=1).reshape(tmp_T+1) # one-hot符号
@@ -83,10 +80,7 @@ for d in range(D): # 文書ごと
             if true_K == 0: # (初回の場合)
                 true_theta_k = np.array([1.0])
             else:
-                true_theta_k = np.hstack(
-                    [true_T_k / (true_T-1 + true_alpha)] + [true_alpha / (true_T-1 + true_alpha)] # 既存・新規の確率を結合
-                )
-                true_theta_k /= true_theta_k.sum() # 正規化
+                true_theta_k = np.hstack([true_T_k, true_alpha]) / (true_T-1 + true_alpha) # 既存・新規の確率を結合
             
             # トピックを生成
             onehot_k = np.random.multinomial(n=1, pvals=true_theta_k, size=1).reshape(true_K+1) # one-hot符号
@@ -107,7 +101,7 @@ for d in range(D): # 文書ごと
                     true_phi_kv = np.random.dirichlet(alpha=np.repeat(true_beta, repeats=V), size=1)
                 else:
                     true_phi_kv = np.vstack(
-                        [true_phi_kv] + [np.random.dirichlet(alpha=np.repeat(true_beta, repeats=V), size=1)] # 既存・新規の確率を結合
+                        [true_phi_kv, np.random.dirichlet(alpha=np.repeat(true_beta, repeats=V), size=1)] # 既存・新規の確率を結合
                     )
             
             # 割り当て数をカウント
