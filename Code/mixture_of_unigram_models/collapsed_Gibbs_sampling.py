@@ -18,10 +18,10 @@ from matplotlib.animation import FuncAnimation
 # (詳細はgenerative_process.pyを参照)
 
 # 文書数を指定
-D = 25
+D = 30
 
 # 語彙数を指定
-V = 240
+V = 100
 
 # トピック数を指定
 true_K = 10
@@ -78,11 +78,7 @@ for d in range(D): # 文書ごと
     w_dic[d] = tmp_w_n.copy()
     
     # 途中経過を表示
-    print(
-        'document: ' + str(d+1) + ', ' + 
-        'words: '    + str(N_d[d]) + ', ' + 
-        'topic: '    + str(k+1)
-    )
+    print(f'document: {d+1}, words: {N_d[d]}, topic: {k+1}')
 
 # %%
 
@@ -98,13 +94,13 @@ V = N_dv.shape[1]
 N_d = N_dv.sum(axis=1)
 
 # トピック数を指定
-K = 10
+K = 9
 
 # ハイパーパラメータの初期値を指定
 alpha = 1.0 # トピック分布
 beta  = 1.0 # 語彙分布
 
-# 文書ごとのトピックを初期化
+# 各文書のトピックを初期化
 z_d = np.tile(np.nan, reps=D)
 
 # 各トピックの割り当て文書数を初期化
@@ -183,9 +179,7 @@ for i in range(max_iter): # 繰り返し試行
 
     # 途中経過を表示
     print(
-        'iteration: ' + str(i+1) + ', ' + 
-        'alpha = '    + str(alpha.round(2)) + ', ' + 
-        'beta = '     + str(beta.round(2))
+        f'iteration: {i+1}, alpha = {alpha:.3f}, beta = {beta:.3f}'
     )
 
 # %%
@@ -205,19 +199,24 @@ color_num = 10
 
 ### 推定したトピック集合の可視化
 
+# 描画する文書数を指定
+#doc_num = D
+doc_num = 10
+
 # グラフサイズを設定
 u = 5
-axis_size = np.ceil(N_dv.max() /u)*u # u単位で切り上げ
+axis_Ndv_max = np.ceil(N_dv[:doc_num].max() /u)*u # u単位で切り上げ
+axis_Dk_max  = np.ceil(D_k.max() /u)*u # u単位で切り上げ
 
-# サブプロットの列数を指定:(1 < 列数 < D)
-col_num = 5
-row_num = np.ceil(D / col_num).astype('int')
+# サブプロットの列数を指定:(1 < 列数 < D+1)
+col_num = 3
+row_num = np.ceil((doc_num+1) / col_num).astype('int')
 
 # 文書データを作図
 fig, axes = plt.subplots(nrows=row_num, ncols=col_num, constrained_layout=True, 
                          figsize=(30, 20), dpi=100, facecolor='white')
 
-for d in range(D):
+for d in range(doc_num):
     
     # サブプロットを抽出
     r = d // col_num
@@ -229,16 +228,29 @@ for d in range(D):
     
     # 語彙頻度を描画
     ax.bar(x=np.arange(stop=V)+1, height=N_dv[d], 
-           color=cmap(k%color_num)) # 頻度
-    ax.set_ylim(ymin=0, ymax=axis_size)
+           color=cmap(k%color_num)) # 単語数
+    ax.set_ylim(ymin=0, ymax=axis_Ndv_max)
     ax.set_xlabel('vocabulary ($v$)')
     ax.set_ylabel('frequency ($N_{dv}$)')
-    ax.set_title(f'$d = {d+1}, k = {k+1}$', loc='left')
+    ax.set_title(f'iteration: {max_iter}, $d = {d+1}, k = {k+1}$', loc='left')
     ax.grid()
 
 # 残りのサブプロットを非表示
-for c in range(c+1, col_num):
+if c == col_num-1: # (最後の文書が右端の列の場合)
+    r = row_num - 1
+    c = -1 
+for c in range(c+1, col_num-1):
     axes[r, c].axis('off')
+    
+# トピックの割当を描画
+ax = axes[row_num-1, col_num-1]
+ax.bar(x=np.arange(stop=K)+1, height=D_k, 
+        color=[cmap(k%color_num) for k in range(K)]) # 文書数
+ax.set_ylim(ymin=0, ymax=axis_Dk_max)
+ax.set_xlabel('topic ($k$)')
+ax.set_ylabel('count ($D_k$)')
+ax.set_title(f'iteration: {max_iter}, $D = {D}$', loc='left')
+ax.grid()
 
 fig.supxlabel('document ($d$)')
 fig.supylabel('document ($d$)')
@@ -251,19 +263,23 @@ plt.show()
 
 # フレーム数を指定
 #frame_num = max_iter + 1
-frame_num = 100
+frame_num = 10
 
 # 1フレーム当たりの試行回数を設定
 iter_per_frame = (max_iter + 1) // frame_num
 
+# 描画する文書数を指定
+#doc_num = D
+doc_num = 10
+
 # グラフサイズを設定
 u = 5
-axis_Ndv_max = np.ceil(N_dv.max() /u)*u # u単位で切り上げ
+axis_Ndv_max = np.ceil(N_dv[:doc_num].max() /u)*u # u単位で切り上げ
 axis_Dk_max  = np.ceil(np.max(trace_Dk_lt) /u)*u # u単位で切り上げ
 
-# サブプロットの列数を指定:(1 < 列数 < D)
-col_num = 5
-row_num = np.ceil((D+1) / col_num).astype('int')
+# サブプロットの列数を指定:(1 < 列数 < D+1)
+col_num = 3
+row_num = np.ceil((doc_num+1) / col_num).astype('int')
 
 # グラフオブジェクトを初期化
 fig, axes = plt.subplots(nrows=row_num, ncols=col_num, constrained_layout=True, 
@@ -286,7 +302,7 @@ def update(i):
     z_d = trace_z_lt[i]
     D_k = trace_Dk_lt[i]
     
-    for d in range(D):
+    for d in range(doc_num):
 
         # サブプロットを抽出
         r = d // col_num
@@ -295,21 +311,16 @@ def update(i):
 
         # トピック番号を取得
         k = z_d[d]
-
-        # ラベル用の文字列を作成
-        doc_label = f'$d = {d+1}, k = {k+1}$'
-        if d == 0: # (左上図の場合)
-            doc_label = f'iteration: {i}, ' + doc_label
         
         # 語彙頻度を描画
         ax.bar(x=np.arange(stop=V)+1, height=N_dv[d], 
-            color=cmap(k%color_num)) # 頻度
+            color=cmap(k%color_num)) # 単語数
         ax.set_ylim(ymin=0, ymax=axis_Ndv_max)
         ax.set_xlabel('vocabulary ($v$)')
         ax.set_ylabel('frequency ($N_{dv}$)')
-        ax.set_title(doc_label, loc='left')
+        ax.set_title(f'iteration: {i}, $d = {d+1}, k = {k+1}$', loc='left')
         ax.grid()
-
+    
     # 残りのサブプロットを非表示
     if c == col_num-1: # (最後の文書が右端の列の場合)
         r = row_num - 1
@@ -317,14 +328,14 @@ def update(i):
     for c in range(c+1, col_num-1):
         axes[r, c].axis('off')
         
-    # トピックごとの文書数を描画
+    # トピックの割当を描画
     ax = axes[row_num-1, col_num-1]
     ax.bar(x=np.arange(stop=K)+1, height=D_k, 
            color=[cmap(k%color_num) for k in range(K)]) # 文書数
     ax.set_ylim(ymin=0, ymax=axis_Dk_max)
     ax.set_xlabel('topic ($k$)')
     ax.set_ylabel('count ($D_k$)')
-    ax.set_title(f'$iteration: {i}, D = {D}$', loc='left')
+    ax.set_title(f'iteration: {i}, $D = {D}$', loc='left')
     ax.grid()
 
 # 動画を作成
@@ -408,7 +419,7 @@ plt.show()
 
 # 配列に変換
 trace_phi_ikv  = np.array(trace_Nkv_lt)
-trace_phi_ikv += np.array(trace_beta_i).reshape((max_iter+1, 1, 1))
+trace_phi_ikv += np.array(trace_beta_lt).reshape((max_iter+1, 1, 1))
 trace_phi_ikv /= trace_phi_ikv.sum(axis=2, keepdims=True) # 正規化
 
 # グラフサイズを設定
@@ -466,7 +477,7 @@ ax.bar(x=np.arange(stop=K)+1, height=theta_k,
 ax.set_ylim(ymin=0, ymax=axis_size)
 ax.set_xlabel('topic ($k$)')
 ax.set_ylabel('probability ($\\theta_k$)')
-ax.set_title(f'$\\alpha = {alpha:.2f}$', loc='left')
+ax.set_title(f'iteration: {max_iter}, $\\alpha = {alpha:.2f}$', loc='left')
 fig.suptitle('topic distribution', fontsize=20)
 ax.grid()
 plt.show()
@@ -507,7 +518,11 @@ def update(i):
     alpha = trace_alpha_lt[i]
     D_k   = trace_Dk_lt[i]
 
-    # ハイパーパラメータを描画
+    # トピック分布を計算
+    theta_k  = D_k + alpha
+    theta_k /= theta_k.sum() # 正規化
+
+    # 全文書で共通の値を描画
     ax = axes[0]
     ax.bar(x=0, height=alpha, 
            color='brown') # ハイパラ
@@ -515,7 +530,7 @@ def update(i):
     ax.set_ylim(ymin=0, ymax=axis_val_max)
     ax.set_xlabel('')
     ax.set_ylabel('value ($\\alpha$)')
-    ax.set_title(f'$iteration = {i}$', loc='left')
+    ax.set_title(f'iteration: {i}', loc='left')
     ax.grid()
 
     # トピックごとの基準値を描画
@@ -526,13 +541,9 @@ def update(i):
            color='brown', alpha=0.5, linewidth=1, linestyle='dashed') # ハイパラ
     ax.set_ylim(ymin=0, ymax=axis_freq_max)
     ax.set_xlabel('topic ($k$)')
-    ax.set_ylabel('count ($D_k$)')
-    ax.set_title(f'$\\alpha = {alpha:.2f}$', loc='left')
+    ax.set_ylabel('count ($D_k + \\alpha$)')
+    ax.set_title(f'iteration: {i}, $\\alpha = {alpha:.2f}$', loc='left')
     ax.grid()
-
-    # トピック分布を計算
-    theta_k  = D_k + alpha
-    theta_k /= theta_k.sum() # 正規化
 
     # トピック分布を描画
     ax = axes[2]
@@ -541,6 +552,7 @@ def update(i):
     ax.set_ylim(ymin=0, ymax=axis_prob_max)
     ax.set_xlabel('topic ($k$)')
     ax.set_ylabel('probability ($\\theta_k$)')
+    ax.set_title(f'iteration: {i}', loc='left')
     ax.grid()
 
 # 動画を作成
@@ -585,7 +597,7 @@ for k in range(K):
     ax.set_ylim(ymin=0, ymax=axis_size)
     ax.set_xlabel('vocabulary ($v$)')
     ax.set_ylabel('probability ($\phi_{kv}$)')
-    ax.set_title(f'$k = {k+1}, \\beta = {beta:.2f}$', loc='left')
+    ax.set_title(f'iteration: {max_iter}, $k = {k+1}, \\beta = {beta:.2f}$', loc='left')
     ax.grid()
 
 # 残りのサブプロットを非表示
@@ -634,7 +646,11 @@ def update(i):
     beta = trace_beta_lt[i]
     N_kv = trace_Nkv_lt[i]
 
-    # ハイパーパラメータを描画
+    # 単語分布を計算
+    phi_kv  = N_kv + beta
+    phi_kv /= phi_kv.sum(axis=1, keepdims=True) # 正規化
+    
+    # 全トピックで共通の値を描画
     ax = axes[0, 0]
     ax.bar(x=0, height=beta, 
            color='brown') # ハイパラ
@@ -642,7 +658,7 @@ def update(i):
     ax.set_ylim(ymin=0, ymax=axis_val_max)
     ax.set_xlabel('')
     ax.set_ylabel('value ($\\beta$)')
-    ax.set_title(f'$iteration = {i}$', loc='left')
+    ax.set_title(f'iteration: {i}', loc='left')
     ax.grid()
 
     # 残りのサブプロットを非表示
@@ -658,22 +674,18 @@ def update(i):
                color='brown', alpha=0.5, linewidth=1, linestyle='dashed') # ハイパラ
         ax.set_ylim(ymin=0, ymax=axis_freq_max)
         ax.set_xlabel('vocabulary ($v$)')
-        ax.set_ylabel('count ($N_{kv}$)')
-        ax.set_title(f'$\\beta = {beta:.2f}$', loc='left')
+        ax.set_ylabel('count ($N_{kv} + \\beta$)')
+        ax.set_title(f'iteration: {i}, $\\beta = {beta:.2f}$', loc='left')
         ax.grid()
         
-        # 語彙分布を計算
-        phi_v  = N_kv[k] + beta
-        phi_v /= phi_v.sum() # 正規化
-
         # 語彙分布を描画
         ax = axes[k+1, 1]
-        ax.bar(x=np.arange(stop=V)+1, height=phi_v, 
+        ax.bar(x=np.arange(stop=V)+1, height=phi_kv[k], 
                color=cmap(k%color_num)) # 確率
         ax.set_ylim(ymin=0, ymax=axis_prob_max)
         ax.set_xlabel('vocabulary ($v$)')
         ax.set_ylabel('probability ($\phi_{kv}$)')
-        ax.set_title(f'$k = {k+1}$', loc='left')
+        ax.set_title(f'iteration: {i}, $k = {k+1}$', loc='left')
         ax.grid()
 
 # 動画を作成

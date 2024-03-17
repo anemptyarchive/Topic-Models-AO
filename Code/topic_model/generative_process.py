@@ -105,11 +105,11 @@ color_num = 10
 ### 真のトピック集合の可視化
 
 # 文書ごとの各トピックの単語数を集計
-N_dk = np.zeros(shape=(D, true_K))
+true_N_dk = np.zeros(shape=(D, true_K))
 for d in range(D):
     for n in range(N_d[d]):
         k = true_z_dic[d][n]
-        N_dk[d, k] += 1
+        true_N_dk[d, k] += 1
 
 # 描画する文書数を指定
 #doc_num = D
@@ -118,7 +118,7 @@ doc_num = 5
 # グラフサイズを設定
 u = 5
 axis_Ndv_max = (np.ceil(N_dv[:doc_num].max() /u)*u).astype('int') # u単位で切り上げ
-axis_Ndk_max = (np.ceil(N_dk[:doc_num].max() /u)*u).astype('int') # u単位で切り上げ
+axis_Ndk_max = (np.ceil(true_N_dk[:doc_num].max() /u)*u).astype('int') # u単位で切り上げ
 
 # 文書データを作図
 fig, axes = plt.subplots(nrows=doc_num, ncols=2, constrained_layout=True, 
@@ -136,7 +136,7 @@ for d in range(doc_num):
     
     # 単語データを描画
     ax = axes[d, 0]
-    ax.pcolor(tmp_z_mv, cmap=cmap, vmin=0, vmax=color_num-1) # 頻度
+    ax.pcolor(tmp_z_mv, cmap=cmap, vmin=0, vmax=color_num-1) # 頻度・トピック
     ax.set_xlabel('vocabulary ($v$)')
     ax.set_ylabel('frequency ($N_{dv}$)')
     ax.set_title(f'$d = {d+1}, N_d = {N_d[d]}$', loc='left')
@@ -151,7 +151,7 @@ for d in range(doc_num):
     
     # トピックの割当を描画
     ax = axes[d, 1]
-    ax.bar(x=np.arange(stop=true_K)+1, height=N_dk[d], 
+    ax.bar(x=np.arange(stop=true_K)+1, height=true_N_dk[d], 
            color=[cmap(k%color_num) for k in range(true_K)]) # 単語数
     ax.set_ylim(ymin=0, ymax=axis_Ndk_max)
     ax.set_xlabel('topic ($k$)')

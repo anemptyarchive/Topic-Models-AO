@@ -221,7 +221,7 @@ for d in range(doc_num):
     
     # 単語データを描画
     ax = axes[d, 0]
-    ax.pcolor(tmp_z_mv, cmap=cmap, vmin=0, vmax=color_num-1) # 頻度
+    ax.pcolor(tmp_z_mv, cmap=cmap, vmin=0, vmax=color_num-1) # 頻度・トピック
     ax.set_xlabel('vocabulary ($v$)')
     ax.set_ylabel('frequency ($N_{dv}$)')
     ax.set_title(f'iteration: {max_iter}, $d = {d+1}, N_d = {N_d[d]}$', loc='left')
@@ -300,7 +300,7 @@ def update(i):
         
         # 単語データを描画
         ax = axes[d, 0]
-        ax.pcolor(z_mv, cmap=cmap, vmin=0, vmax=color_num-1) # 頻度
+        ax.pcolor(z_mv, cmap=cmap, vmin=0, vmax=color_num-1) # 頻度・トピック
         ax.set_xlabel('vocabulary ($v$)')
         ax.set_ylabel('frequency ($N_{dv}$)')
         ax.set_title(f'iteration: {i}, $d = {d+1}, N_d = {N_d[d]}$', loc='left')
@@ -321,7 +321,7 @@ ani = FuncAnimation(fig=fig, func=update, frames=frame_num, interval=100)
 
 # 動画を書出
 ani.save(
-    filename='../figure/ch4/ch4_5_doc_data.mp4', 
+    filename='../figure/ch4/ch4_5_topic_set.mp4', 
     progress_callback = lambda i, n: print(f'frame: {i+1} / {n}')
 )
 
