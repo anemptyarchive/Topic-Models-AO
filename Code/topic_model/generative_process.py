@@ -147,7 +147,7 @@ for d in range(doc_num):
         v = w_dic[d][n]
         m = np.sum(w_dic[d][:n+1] == v)
         ax.text(x=v+0.5, y=m-0.5, s=str(n+1), 
-                size=7, ha='center', va='center') # 単語番号
+                size=5, ha='center', va='center') # 単語番号
     
     # トピックの割当を描画
     ax = axes[d, 1]

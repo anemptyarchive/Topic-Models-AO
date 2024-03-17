@@ -149,7 +149,7 @@ for i in range(max_iter): # 繰り返し試行
             prob_z_k /= prob_z_k.sum() # 正規化
             
             # トピックをサンプリング
-            k = np.random.choice(a=np.arange(K), size=1, p=prob_z_k).item() # (簡易版のカテゴリ乱数)
+            k = np.random.choice(a=np.arange(K), size=1, p=prob_z_k).item() # (カテゴリ乱数)
             
             # トピックを割当
             tmp_z_n[n] = k

@@ -15,6 +15,7 @@ from matplotlib.animation import FuncAnimation
 # %%
 
 ### 簡易文書データの作成：(中華料理店過程)
+# (詳細はgenerative_process.pyを参照)
 
 # 文書数を指定
 D = 30
@@ -68,7 +69,7 @@ for d in range(D): # 文書ごと
                 ]
             ) # 既存・新規の確率を結合
     
-    # 割り当て数をカウント
+    # 割当数をカウント
     true_D_k[k] += 1
 
     # 単語数を生成
@@ -315,8 +316,8 @@ def update(i):
         [ax.cla() for ax in axes[r]]
     
     # 更新値を取得
-    z_d = trace_z_lt[i]
-    D_k = trace_Dk_lt[i]
+    z_d   = trace_z_lt[i]
+    D_k   = trace_Dk_lt[i]
     tmp_K = len(D_k)
 
     for d in range(doc_num):

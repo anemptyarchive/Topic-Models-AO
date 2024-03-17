@@ -77,7 +77,7 @@ for d in range(D): # 文書ごと
                 [true_phi_kv, np.random.dirichlet(alpha=true_beta_v, size=1)] # 既存・新規の確率を結合
             )
     
-    # 割り当て数をカウント
+    # 割当数をカウント
     true_D_k[k] += 1
 
     # 単語数を生成
@@ -228,7 +228,7 @@ def update(d):
     # 前フレームのグラフを初期化
     [ax.cla() for ax in axes]
     
-    # トピック数を設定
+    # (文書dまでの)トピック数を取得
     if d == 0: # (初回の場合)
         tmp_K = 0
     else:
@@ -237,12 +237,6 @@ def update(d):
     # 各トピックの文書数を集計
     tmp_D_k = np.array([np.sum(true_z_d[:d] == k) for k in range(true_K)])
 
-    # トピック分布を計算
-    if tmp_K == 0: # (初回の場合)
-        tmp_theta_k = np.array([1.0])
-    else:
-        tmp_theta_k = np.hstack([tmp_D_k[:tmp_K], true_alpha]) / (d + true_alpha) # 既存・新規の確率を結合
-    
     # トピックの割当を描画
     ax = axes[0]
     ax.bar(x=np.arange(stop=true_K)+1, height=tmp_D_k, 
@@ -251,8 +245,14 @@ def update(d):
     ax.set_ylim(ymin=0, ymax=axis_freq_max)
     ax.set_xlabel('topic ($k$)')
     ax.set_ylabel('frequency ($D_k$)')
-    ax.set_title(f'$D = {d}, K = {tmp_K}$', loc='left')
+    ax.set_title(f'$D = {d}$', loc='left')
     ax.grid()
+    
+    # トピック分布を計算
+    if tmp_K == 0: # (初回の場合)
+        tmp_theta_k = np.array([1.0])
+    else:
+        tmp_theta_k = np.hstack([tmp_D_k[:tmp_K], true_alpha]) / (d + true_alpha) # 既存・新規の確率を結合
     
     # トピック分布を描画
     ax = axes[1]

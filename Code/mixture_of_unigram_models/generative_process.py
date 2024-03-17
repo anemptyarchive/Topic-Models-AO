@@ -116,7 +116,7 @@ doc_num = 10
 # グラフサイズを設定
 u = 5
 axis_Ndv_max = np.ceil(N_dv[:doc_num].max() /u)*u # u単位で切り上げ
-axis_Dk_max  = np.ceil(true_D_k.sum() /u)*u # u単位で切り上げ
+axis_Dk_max  = np.ceil(true_D_k.max() /u)*u # u単位で切り上げ
 
 # サブプロットの列数を指定:(1 < 列数 < D+1)
 col_num = 3
@@ -199,7 +199,6 @@ plt.show()
 # 描画するトピック数を指定
 #topic_num = true_K
 topic_num = 9
-
 
 # グラフサイズを設定
 u = 0.01

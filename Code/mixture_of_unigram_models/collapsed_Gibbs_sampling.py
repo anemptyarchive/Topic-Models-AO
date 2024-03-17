@@ -150,7 +150,7 @@ for i in range(max_iter): # 繰り返し試行
         prob_z_k     /= prob_z_k.sum() # 正規化
 
         # トピックをサンプリング
-        k = np.random.choice(a=np.arange(K), size=1, p=prob_z_k).item() # (簡易版のカテゴリ乱数)
+        k = np.random.choice(a=np.arange(K), size=1, p=prob_z_k).item() # (カテゴリ乱数)
         
         # トピックを割当
         z_d[d] = k
@@ -178,9 +178,7 @@ for i in range(max_iter): # 繰り返し試行
     trace_beta_lt.append(beta)
 
     # 途中経過を表示
-    print(
-        f'iteration: {i+1}, alpha = {alpha:.3f}, beta = {beta:.3f}'
-    )
+    print(f'iteration: {i+1}, alpha = {alpha:.3f}, beta = {beta:.3f}')
 
 # %%
 
