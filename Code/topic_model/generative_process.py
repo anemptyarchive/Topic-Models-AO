@@ -8,6 +8,7 @@
 #　利用ライブラリ
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 
 # %%
 
@@ -32,10 +33,10 @@ true_beta   = 1.0
 true_beta_v = np.repeat(true_beta, repeats=V) # 一様なパラメータの場合
 #true_beta_v = np.random.uniform(low=1, high=2, size=V) # 多様なパラメータの場合
 
-# トピック分布を生成
+# トピック分布のパラメータを生成
 true_theta_dk = np.random.dirichlet(alpha=true_alpha_k, size=D)
 
-# 語彙分布を生成
+# 語彙分布のパラメータを生成
 true_phi_kv = np.random.dirichlet(alpha=true_beta_v, size=true_K)
 
 # 文書ごとの各単語の語彙を初期化
@@ -122,7 +123,7 @@ axis_Ndk_max = (np.ceil(true_N_dk[:doc_num].max() /u)*u).astype('int') # u単位
 
 # 文書データを作図
 fig, axes = plt.subplots(nrows=doc_num, ncols=2, constrained_layout=True, 
-                         figsize=(20, 25), facecolor='white')
+                         figsize=(20, 25), dpi=100, facecolor='white')
 
 for d in range(doc_num):
 
@@ -165,6 +166,85 @@ plt.show()
 
 # %%
 
+### 真のトピック集合の推移の可視化
+
+# 描画する文書数を指定
+#doc_num = D
+doc_num = 5
+
+# 最大単語数を取得
+max_Nd = N_d[:doc_num].max()
+
+# グラフサイズを設定
+u = 5
+axis_Ndv_max = (np.ceil(N_dv[:doc_num].max() /u)*u).astype('int') # u単位で切り上げ
+axis_Ndk_max = (np.ceil(true_N_dk[:doc_num].max() /u)*u).astype('int') # u単位で切り上げ
+
+# グラフオブジェクトを初期化
+fig, axes = plt.subplots(nrows=doc_num, ncols=2, constrained_layout=True, 
+                         figsize=(20, 25), dpi=100, facecolor='white')
+fig.supylabel('document ($d$)')
+fig.suptitle('document data (true topic)', fontsize=20)
+
+# 作図処理を定義
+def update(n):
+    
+    for d in range(doc_num):
+        if n < N_d[d]: # (単語数に達すればそのまま)
+            
+            # 前フレームのグラフを初期化
+            [ax.cla() for ax in axes[d]]
+            
+            # 各語彙の単語数を集計・各単語のトピックを格納
+            tmp_z_mv = np.tile(np.nan, reps=(axis_Ndv_max, V))
+            for tmp_n in range(n+1):
+                v = w_dic[d][tmp_n]
+                m = np.sum(w_dic[d][:tmp_n+1] == v)
+                k = true_z_dic[d][tmp_n]
+                tmp_z_mv[m-1, v] = k % color_num # (配色の共通化用)
+            
+            # 単語データを描画
+            ax = axes[d, 0]
+            ax.pcolor(tmp_z_mv, cmap=cmap, vmin=0, vmax=color_num-1) # 頻度・トピック
+            ax.set_xlabel('vocabulary ($v$)')
+            ax.set_ylabel('frequency ($N_{dv}$)')
+            ax.set_title(f'$d = {d+1}, N_d = {n+1}$', loc='left')
+            ax.grid()
+            
+            # 語彙の出現順を描画
+            for tmp_n in range(n+1):
+                v = w_dic[d][tmp_n]
+                m = np.sum(w_dic[d][:tmp_n+1] == v)
+                ax.text(x=v+0.5, y=m-0.5, s=str(tmp_n+1), 
+                        size=5, ha='center', va='center') # 単語番号
+            
+            # 各トピックの単語数を集計
+            tmp_M_k = np.zeros(shape=true_K)
+            for tmp_n in range(n+1):
+                k = true_z_dic[d][tmp_n]
+                tmp_M_k[k] += 1
+            
+            # トピックの割当を描画
+            ax = axes[d, 1]
+            ax.bar(x=np.arange(stop=true_K)+1, height=tmp_M_k, 
+                   color=[cmap(k%color_num) for k in range(true_K)]) # 単語数
+            ax.set_ylim(ymin=0, ymax=axis_Ndk_max)
+            ax.set_xlabel('topic ($k$)')
+            ax.set_ylabel('frequency ($N_{dk}$)')
+            ax.set_title(f'$d = {d+1}, N_d = {n+1}$', loc='left')
+            ax.grid()
+
+# 動画を作成
+ani = FuncAnimation(fig=fig, func=update, frames=max_Nd, interval=100)
+
+# 動画を書出
+ani.save(
+    filename='../figure/ch4/ch4_2_true_topic_set.mp4', 
+    progress_callback = lambda i, n: print(f'frame: {i+1} / {n}')
+)
+
+# %%
+
 ### 真のトピック分布の可視化
 
 # 描画する文書数を指定
@@ -183,7 +263,7 @@ row_num = np.ceil(doc_num / col_num).astype('int')
 
 # トピック分布を作図
 fig, axes = plt.subplots(nrows=row_num, ncols=col_num, constrained_layout=True, 
-                         figsize=(24, 15), dpi=100, facecolor='white')
+                         figsize=(24, 18), dpi=100, facecolor='white')
 
 for d in range(doc_num):
     
