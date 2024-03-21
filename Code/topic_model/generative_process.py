@@ -96,7 +96,7 @@ for d in range(D): # 文書ごと
 ### 作図の準備
 
 # 配色の共通化用のカラーマップを作成
-cmap = plt.get_cmap("tab10")
+cmap = plt.get_cmap('tab10')
 
 # カラーマップの色数を設定:(カラーマップに応じて固定)
 color_num = 10

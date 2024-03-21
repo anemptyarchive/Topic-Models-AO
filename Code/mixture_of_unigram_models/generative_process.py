@@ -32,10 +32,10 @@ true_beta   = 1.0
 true_beta_v = np.repeat(true_beta, repeats=V) # 一様なパラメータの場合
 #true_beta_v = np.random.uniform(low=1, high=2, size=V) # 多様なパラメータの場合
 
-# トピック分布を生成
+# トピック分布のパラメータを生成
 true_theta_k = np.random.dirichlet(alpha=true_alpha_k, size=1).reshape(true_K)
 
-# 語彙分布を生成
+# 語彙分布のパラメータを生成
 true_phi_kv = np.random.dirichlet(alpha=true_beta_v, size=true_K)
 
 # 文書ごとの各単語の語彙を初期化
@@ -94,7 +94,7 @@ for d in range(D): # 文書ごと
 true_z_d = true_z_d.astype('int')
 
 # 配色の共通化用のカラーマップを作成
-cmap = plt.get_cmap("tab10")
+cmap = plt.get_cmap('tab10')
 
 # カラーマップの色数を設定:(カラーマップに応じて固定)
 color_num = 10
@@ -180,7 +180,7 @@ u = 0.1
 axis_size = np.ceil(true_theta_k.max() /u)*u # u単位で切り上げ
 
 # トピック分布を作図
-fig, ax = plt.subplots(figsize=(8, 5), dpi=100, facecolor='white')
+fig, ax = plt.subplots(figsize=(8, 6), dpi=100, facecolor='white')
 ax.bar(x=np.arange(stop=true_K)+1, height=true_theta_k, 
        color=[cmap(k%color_num) for k in range(true_K)]) # 確率
 ax.set_ylim(ymin=0, ymax=axis_size)

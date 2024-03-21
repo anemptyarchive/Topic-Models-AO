@@ -81,7 +81,7 @@ for d in range(D): # 文書ごと
 
     for n in range(N_d[d]): # 単語ごと
 
-        # テーブル分布を生成
+        # テーブル分布のパラメータを計算
         if tmp_T == 0: # (初回の場合)
             true_tau_t = np.array([1.0])
         else:
@@ -102,7 +102,7 @@ for d in range(D): # 文書ごと
             tmp_T  += 1
             tmp_M_t = np.hstack([tmp_M_t, 0])
         
-            # トピック分布を生成
+            # トピック分布のパラメータを計算
             if true_K == 0: # (初回の場合)
                 true_theta_k = np.array([1.0])
             else:
@@ -122,7 +122,7 @@ for d in range(D): # 文書ごと
                 true_K  += 1
                 true_T_k = np.hstack([true_T_k, 0])
 
-                # 語彙分布を生成
+                # 語彙分布のパラメータを生成
                 if true_K == 1: # (初回の場合)
                     true_phi_kv = np.random.dirichlet(alpha=true_beta_v, size=1)
                 else:
@@ -166,7 +166,7 @@ for d in range(D): # 文書ごと
 ### 作図の準備
 
 # 配色の共通化用のカラーマップを作成
-cmap = plt.get_cmap("tab10")
+cmap = plt.get_cmap('tab10')
 
 # カラーマップの色数を設定:(カラーマップに応じて固定)
 color_num = 10
@@ -265,7 +265,7 @@ plt.show()
 # 最大テーブル数を取得
 max_Td = true_T_d.max()
 
-# N_d+1番目の単語のテーブル分布を計算
+# N_d+1番目の単語のテーブル分布のパラメータを計算
 true_tau_dt = np.zeros(shape=(D, max_Td+1))
 for d in range(D):
     tmp_T   = true_T_d[d]
@@ -288,7 +288,7 @@ row_num = np.ceil(doc_num / col_num).astype('int')
 
 # テーブル分布を作図
 fig, axes = plt.subplots(nrows=row_num, ncols=col_num, constrained_layout=True, 
-                         figsize=(24, 15), dpi=100, facecolor='white')
+                         figsize=(24, 18), dpi=100, facecolor='white')
 
 for d in range(doc_num):
     
@@ -341,7 +341,7 @@ axis_prob_max = 1.0
 
 # グラフオブジェクトを初期化
 fig, axes = plt.subplots(nrows=doc_num, ncols=2, constrained_layout=True, 
-                         figsize=(16, 25), dpi=100, facecolor='white')
+                         figsize=(16, 30), dpi=100, facecolor='white')
 fig.suptitle('table distribution (truth)', fontsize=20)
 
 # 作図処理を定義
@@ -402,7 +402,7 @@ ani = FuncAnimation(fig=fig, func=update, frames=max_Nd, interval=100)
 
 # 動画を書出
 ani.save(
-    filename='../figure/ch8/ch8_2_table_dist.mp4', 
+    filename='../figure/ch8/ch8_2_true_table_dist.mp4', 
     progress_callback = lambda i, n: print(f'frame: {i+1} / {n}')
 )
 
@@ -413,7 +413,7 @@ ani.save(
 # 最大テーブル数を取得
 max_Td = true_T_d.max()
 
-# T+1番目のテーブルのトピック分布を計算
+# T+1番目のテーブルのトピック分布のパラメータを計算
 true_theta_k = np.hstack([true_T_k, true_alpha]) / (true_T + true_alpha) # 既存・新規の確率を結合
 
 # グラフサイズを設定
@@ -421,7 +421,7 @@ u = 0.1
 axis_size = np.ceil(true_theta_k.max() /u)*u # u単位で切り上げ
 
 # トピック分布を作図
-fig, ax = plt.subplots(figsize=(8, 5), dpi=100, facecolor='white')
+fig, ax = plt.subplots(figsize=(8, 6), dpi=100, facecolor='white')
 ax.bar(x=np.arange(stop=true_K+1)+1, height=true_theta_k, 
        color=[cmap(k%color_num) for k in range(true_K)]+['whitesmoke'], 
        edgecolor='black', linestyle='dashed', linewidth=[0]*true_K+[1]) # 確率
@@ -452,7 +452,7 @@ axis_prob_max = 1.0
 
 # グラフオブジェクトを初期化
 fig, axes = plt.subplots(nrows=1, ncols=2, constrained_layout=True, 
-                         figsize=(16, 5), dpi=100, facecolor='white')
+                         figsize=(16, 6), dpi=100, facecolor='white')
 fig.suptitle('topic distribution (truth)', fontsize=20)
 
 # 作図処理を定義
@@ -481,7 +481,7 @@ def update(i):
     ax.set_title(f'$D = {d_i[i]+1}, T_d = {t_i[i]+1}, T = {i}$', loc='left')
     ax.grid()
     
-    # トピック分布を計算
+    # トピック分布のパラメータを計算
     if tmp_K == 0: # (初回の場合)
         tmp_theta_k = np.array([1.0])
     else:
@@ -504,7 +504,7 @@ ani = FuncAnimation(fig=fig, func=update, frames=T+1, interval=500)
 
 # 動画を書出
 ani.save(
-    filename='../figure/ch8/ch8_2_tocip_dist.mp4', 
+    filename='../figure/ch8/ch8_2_topic_dist.mp4', 
     progress_callback = lambda i, n: print(f'frame: {i+1} / {n}')
 )
 

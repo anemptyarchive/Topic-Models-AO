@@ -8,7 +8,7 @@
 
 # 利用ライブラリ
 import numpy as np
-from scipy.special import loggamma
+from scipy.special import loggamma, digamma
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
@@ -18,13 +18,13 @@ from matplotlib.animation import FuncAnimation
 # (詳細はgenerative_process.pyを参照)
 
 # 文書数を指定
-D = 30
+D = 100
 
 # 語彙数を指定
-V = 100
+V = 500
 
 # ハイパーパラメータを指定
-true_alpha  = 2.0 # トピック分布
+true_alpha = 5.0 # トピック分布
 true_beta  = 1.0 # 語彙分布
 
 # トピック数を初期化
@@ -40,7 +40,7 @@ N_dv = np.zeros(shape=(D, V), dtype='int') # 文書ごとの各語彙の単語�
 # 文書データを生成
 for d in range(D): # 文書ごと
     
-    # トピック分布を生成
+    # トピック分布のパラメータを計算
     if true_K == 0: # (初回の場合)
         true_theta_k = np.array([1.0])
     else:
@@ -58,7 +58,7 @@ for d in range(D): # 文書ごと
         true_K  += 1
         true_D_k = np.hstack([true_D_k, 0])
 
-        # 語彙分布を生成
+        # 語彙分布のパラメータを生成
         if true_K == 1: # (初回の場合)
             true_phi_kv = np.random.dirichlet(alpha=np.repeat(true_beta, repeats=V), size=1)
         else:
@@ -124,9 +124,6 @@ D_k = np.array([])
 # 語彙ごとの各トピックの割り当て単語数を初期化
 N_kv = np.zeros(shape=(K, V))
 
-# 各トピックの割り当て単語数を初期化
-N_k = np.array([])
-
 # %%
 
 ### 推論
@@ -138,6 +135,8 @@ max_iter = 1000
 trace_z_lt   = [z_d.copy()]
 trace_Dk_lt  = [D_k.copy()]
 trace_Nkv_lt = [N_kv.copy()]
+trace_alpha_lt = [alpha]
+trace_beta_lt  = [beta]
 
 # 崩壊型ギブスサンプリング
 for i in range(max_iter): # 繰り返し試行
@@ -191,13 +190,25 @@ for i in range(max_iter): # 繰り返し試行
         D_k[k]  += 1
         N_kv[k] += N_dv[d]
     
+    # トピック分布のハイパーパラメータを更新:式(3.28)
+    old_alpha = alpha
+    alpha *= digamma(D_k + old_alpha).sum() - K * digamma(old_alpha)
+    alpha /= K * digamma(D + K*old_alpha) - K * digamma(K*old_alpha)
+    
+    # 語彙分布のハイパーパラメータを更新:式(3.29)
+    old_beta = beta
+    beta *= digamma(N_kv + old_beta).sum() - K*V * digamma(old_beta)
+    beta /= V * digamma(N_kv.sum(axis=1) + V*old_beta).sum() - K*V * digamma(V*old_beta)
+    
     # 更新値を記録
     trace_z_lt.append(z_d.astype('int').copy())
     trace_Dk_lt.append(D_k.copy())
     trace_Nkv_lt.append(N_kv.copy())
+    trace_alpha_lt.append(alpha)
+    trace_beta_lt.append(beta)
      
     # 途中経過を表示
-    print(f'iteration: {i+1}, K = {K}')
+    print(f'iteration: {i+1}, K = {K}, alpha = {alpha:.3f}, beta = {beta:.3f}')
 
 # %%
 
@@ -207,7 +218,7 @@ for i in range(max_iter): # 繰り返し試行
 z_d = z_d.astype('int')
 
 # 配色の共通化用のカラーマップを作成
-cmap = plt.get_cmap("tab10")
+cmap = plt.get_cmap('tab10')
 
 # カラーマップの色数を設定:(カラーマップに応じて固定)
 color_num = 10
@@ -284,6 +295,7 @@ frame_num = 10
 
 # 1フレーム当たりの試行回数を設定
 iter_per_frame = (max_iter + 1) // frame_num
+#iter_per_frame = 1
 
 # 描画する文書数を指定
 #doc_num = D
@@ -362,10 +374,386 @@ ani = FuncAnimation(fig=fig, func=update, frames=frame_num, interval=100)
 
 # 動画を書出
 ani.save(
-    filename='../figure/ch8/ch8_1_topic_set.mp4', dpi=100, 
+    filename='../figure/ch8/ch8_1_estimated_topic_set.mp4', dpi=100, 
     progress_callback = lambda i, n: print(f'frame: {i+1} / {n}')
 )
 
 # %%
+
+### 推定したトピック分布のハイパーパラメータの推移の可視化
+
+# 配列に変換
+trace_alpha_i = np.array(trace_alpha_lt)
+
+# グラフサイズを設定
+u = 0.5
+axis_size = np.ceil(trace_alpha_i.max() /u)*u # u単位で切り上げ
+
+# ハイパーパラメータの推移を作図
+fig, ax = plt.subplots(figsize=(8, 6), facecolor='white')
+ax.plot(np.arange(max_iter+1), trace_alpha_i) # 更新値
+ax.set_ylim(ymin=0, ymax=axis_size)
+ax.set_xlabel('iteration')
+ax.set_ylabel('value ($\\alpha$)')
+fig.suptitle('hyperparameter of topic distribution', fontsize=20)
+ax.grid()
+plt.show()
+
+# %%
+
+### 推定した単語分布のハイパーパラメータの推移の可視化
+
+# 配列に変換
+trace_beta_i = np.array(trace_beta_lt)
+
+# グラフサイズを設定
+u = 0.5
+axis_size = np.ceil(trace_beta_i.max() /u)*u # u単位で切り上げ
+
+# ハイパーパラメータの推移を作図
+fig, ax = plt.subplots(figsize=(8, 6), facecolor='white')
+ax.plot(np.arange(max_iter+1), trace_beta_i) # 更新値
+ax.set_xlabel('iteration')
+ax.set_ylabel('value ($\\beta$)')
+fig.suptitle('hyperparameter of word distribution', fontsize=20)
+ax.set_ylim(ymin=0, ymax=axis_size)
+ax.grid()
+plt.show()
+
+# %%
+
+### 推定したトピック分布のパラメータの推移の可視化
+
+# 配列に変換
+trace_theta_ik = np.zeros(shape=(max_iter+1, K))
+for i in range(max_iter+1):
+    tmp_K = len(trace_Dk_lt[i])
+    trace_theta_ik[i, :tmp_K] = trace_Dk_lt[i]
+trace_theta_ik += np.array(trace_alpha_lt).reshape((max_iter+1, 1))
+trace_theta_ik /= trace_theta_ik.sum(axis=1, keepdims=True) # 正規化
+
+# グラフサイズを設定
+u = 0.5
+axis_size = np.ceil(trace_theta_ik.max() /u)*u # u単位で切り上げ
+
+# パラメータの推移を作図
+fig, ax = plt.subplots(figsize=(8, 6), facecolor='white')
+ax.plot(np.arange(max_iter+1), trace_theta_ik) # 更新値
+ax.set_ylim(ymin=0, ymax=axis_size)
+ax.set_xlabel('iteration')
+ax.set_ylabel('probability ($\\theta_k$)')
+ax.set_title(f'$K = {K}$', loc='left')
+fig.suptitle('parameter of topic distribution', fontsize=20)
+ax.grid()
+plt.show()
+
+# %%
+
+### 推定した単語分布のパラメータの推移の可視化
+
+# 配列に変換
+trace_phi_ikv = np.zeros(shape=(max_iter+1, K, V))
+for i in range(max_iter+1):
+    tmp_K = len(trace_Dk_lt[i])
+    trace_phi_ikv[i, :tmp_K] = np.array(trace_Nkv_lt[i])
+trace_phi_ikv += np.array(trace_beta_lt).reshape((max_iter+1, 1, 1))
+trace_phi_ikv /= trace_phi_ikv.sum(axis=2, keepdims=True) # 正規化
+
+# 描画するトピック数を指定
+#topic_num = K
+topic_num = 9
+
+# グラフサイズを設定
+u = 0.01
+axis_size = np.ceil(trace_phi_ikv[:, :topic_num].max() /u)*u # u単位で切り上げ
+
+# サブプロットの列数を指定:(1 < 列数 < K)
+col_num = 3
+row_num = np.ceil(topic_num / col_num).astype('int')
+
+# ハイパーパラメータの推移を作図
+fig, axes = plt.subplots(nrows=row_num, ncols=col_num, constrained_layout=True, 
+                         figsize=(30, 15), facecolor='white')
+
+for k in range(topic_num):
+    
+    # サブプロットを抽出
+    r = k // col_num
+    c = k % col_num
+    ax = axes[r, c]
+
+    # パラメータの推移を描画
+    ax.plot(np.arange(max_iter+1), trace_phi_ikv[:, k]) # 更新値
+    ax.set_ylim(ymin=0, ymax=axis_size)
+    ax.set_xlabel('iteration')
+    ax.set_ylabel('probability ($\\phi_{kv}$)')
+    ax.set_title(f'$k = {k+1}, V = {V}$', loc='left')
+    ax.grid()
+
+# 残りのサブプロットを非表示
+for c in range(c+1, col_num):
+    axes[r, c].axis('off')
+
+fig.supxlabel('topic ($k$)')
+fig.supylabel('topic ($k$)')
+fig.suptitle('parameter of word distribution', fontsize=20)
+plt.show()
+
+# %%
+
+### 推定したトピック分布の可視化
+
+# トピック分布のパラメータを計算
+theta_k  = D_k + alpha
+theta_k /= theta_k.sum() # 正規化
+
+# グラフサイズを設定
+u = 0.1
+axis_size = np.ceil(theta_k.max() /u)*u # u単位で切り上げ
+
+# トピック分布を作図
+fig, ax = plt.subplots(figsize=(8, 6), dpi=100, facecolor='white')
+ax.bar(x=np.arange(stop=K)+1, height=theta_k, 
+       color=[cmap(k%color_num) for k in range(K)]) # 確率
+ax.set_ylim(ymin=0, ymax=axis_size)
+ax.set_xlabel('topic ($k$)')
+ax.set_ylabel('probability ($\\theta_k$)')
+ax.set_title(f'iteration: {max_iter}, $\\alpha = {alpha:.2f}$', loc='left')
+fig.suptitle('topic distribution', fontsize=20)
+ax.grid()
+plt.show()
+
+# %%
+
+### 推定したトピック分布の推移の可視化
+
+# フレーム数を指定
+#frame_num = max_iter + 1
+frame_num = 100
+
+# 1フレーム当たりの試行回数を設定
+iter_per_frame = (max_iter + 1) // frame_num
+iter_per_frame = 1
+
+# グラフサイズを設定
+u = 1
+axis_val_max = np.ceil(max(trace_alpha_lt) /u)*u # u単位で切り上げ
+u = 5
+axis_freq_max = np.ceil(max([(trace_Dk_lt[i] + trace_alpha_lt[i]).max() for i in range(1, max_iter+1)]) /u)*u # u単位で切り上げ
+axis_prob_max = 0.5
+
+# グラフオブジェクトを初期化
+fig, axes = plt.subplots(nrows=1, ncols=3, constrained_layout=True, 
+                         figsize=(16, 6), facecolor='white')
+fig.suptitle('topic distribution', fontsize=20)
+
+# 作図処理を定義
+def update(i):
+
+    # 試行回数を調整
+    i *= iter_per_frame
+
+    # 前フレームのグラフを初期化
+    [ax.cla() for ax in axes]
+    
+    # 更新値を取得
+    alpha = trace_alpha_lt[i]
+    tmp_K = len(trace_Dk_lt[i])
+    D_k   = np.zeros(shape=K) # (要素数を調整)
+    D_k[:tmp_K] = trace_Dk_lt[i]
+
+    # 全文書で共通の値を描画
+    ax = axes[0]
+    ax.bar(x=0, height=alpha, 
+           color='brown') # ハイパラ
+    ax.set_xticks(ticks=[0], labels=[''])
+    ax.set_ylim(ymin=0, ymax=axis_val_max)
+    ax.set_xlabel('')
+    ax.set_ylabel('value ($\\alpha$)')
+    ax.set_title(f'iteration: {i}', loc='left')
+    ax.grid()
+
+    # トピックごとの基準値を描画
+    ax = axes[1]
+    ax.bar(x=np.arange(stop=K)+1, height=D_k, 
+           color=[cmap(k%color_num) for k in range(K)]) # 文書数
+    ax.bar(x=np.arange(K)+1, height=alpha, bottom=D_k, 
+           color='brown', alpha=0.5, linewidth=1, linestyle='dashed') # ハイパラ
+    ax.set_ylim(ymin=0, ymax=axis_freq_max)
+    ax.set_xlabel('topic ($k$)')
+    ax.set_ylabel('count ($D_k + \\alpha$)')
+    ax.set_title(f'iteration: {i}, $\\alpha = {alpha:.2f}$', loc='left')
+    ax.grid()
+
+    # トピック分布のパラメータを計算
+    theta_k  = D_k + alpha
+    theta_k /= theta_k.sum() # 正規化
+
+    # トピック分布を描画
+    ax = axes[2]
+    ax.bar(x=np.arange(stop=K)+1, height=theta_k, 
+           color=[cmap(k%color_num) for k in range(K)]) # 確率
+    ax.set_ylim(ymin=0, ymax=axis_prob_max)
+    ax.set_xlabel('topic ($k$)')
+    ax.set_ylabel('probability ($\\theta_k$)')
+    ax.set_title(f'iteration: {i}, $K = {tmp_K}$', loc='left')
+    ax.grid()
+
+# 動画を作成
+ani = FuncAnimation(fig=fig, func=update, frames=frame_num, interval=100)
+
+# 動画を書出
+ani.save(
+    filename='../figure/ch8/ch8_1_estimated_topic_dist.mp4', dpi=100, 
+    progress_callback = lambda i, n: print(f'frame: {i+1} / {n}')
+)
+
+# %%
+
+### 推定した単語分布の可視化
+
+# 語彙分布のパラメータを計算
+phi_kv  = N_kv + beta
+phi_kv /= phi_kv.sum(axis=1, keepdims=True) # 正規化
+
+# 描画するトピック数を指定
+#topic_num = K
+topic_num = 9
+
+# グラフサイズを設定
+u = 0.01
+axis_size = np.ceil(phi_kv[:topic_num].max() /u)*u # u単位で切り上げ
+
+# サブプロットの列数を指定:(1 < 列数 < K)
+col_num = 3
+row_num = np.ceil(topic_num / col_num).astype('int')
+
+# 語彙分布を作図
+fig, axes = plt.subplots(nrows=row_num, ncols=col_num, constrained_layout=True, 
+                         figsize=(30, 15), dpi=100, facecolor='white')
+
+for k in range(topic_num):
+    
+    # サブプロットを抽出
+    r = k // col_num
+    c = k % col_num
+    ax = axes[r, c]
+
+    # 語彙分布を描画
+    ax.bar(x=np.arange(stop=V)+1, height=phi_kv[k], 
+           color=cmap(k%color_num)) # 確率
+    ax.set_ylim(ymin=0, ymax=axis_size)
+    ax.set_xlabel('vocabulary ($v$)')
+    ax.set_ylabel('probability ($\phi_{kv}$)')
+    ax.set_title(f'iteration: {max_iter}, $k = {k+1}, \\beta = {beta:.2f}$', loc='left')
+    ax.grid()
+
+# 残りのサブプロットを非表示
+for c in range(c+1, col_num):
+    axes[r, c].axis('off')
+
+fig.supxlabel('topic ($k$)')
+fig.supylabel('topic ($k$)')
+fig.suptitle('word distribution', fontsize=20)
+plt.show()
+
+# %%
+
+### 推定した単語分布の推移の可視化
+
+# フレーム数を指定
+#frame_num = max_iter + 1
+frame_num = 100
+
+# 1フレーム当たりの試行回数を設定
+iter_per_frame = (max_iter + 1) // frame_num
+#iter_per_frame = 1
+
+# 描画するトピック数を指定
+#topic_num = K
+topic_num = 5
+
+# グラフサイズを設定
+u = 1
+axis_val_max = np.ceil(max(trace_beta_lt) /u)*u # u単位で切り上げ
+u = 5
+axis_freq_max = np.ceil(max([(trace_Nkv_lt[i][:topic_num] + trace_beta_lt[i]).max() for i in range(1, max_iter+1)]) /u)*u # u単位で切り上げ
+axis_prob_max = 0.1
+
+# グラフオブジェクトを初期化
+fig, axes = plt.subplots(nrows=topic_num+1, ncols=2, constrained_layout=True, 
+                         figsize=(20, 30), facecolor='white')
+fig.suptitle('word distribution', fontsize=20)
+
+# 作図処理を定義
+def update(i):
+
+    # 試行回数を調整
+    i *= iter_per_frame
+
+    # 前フレームのグラフを初期化
+    [ax.cla() for ax in axes[:, 0]]
+    [ax.cla() for ax in axes[:, 1]]
+    
+    # 更新値を取得
+    beta  = trace_beta_lt[i]
+    tmp_K = len(trace_Nkv_lt[i])
+    N_kv  = np.zeros(shape=(K, V)) # (要素数を調整)
+    N_kv[:tmp_K] = trace_Nkv_lt[i]
+
+    # 単語分布のパラメータを計算
+    phi_kv  = N_kv + beta
+    phi_kv /= phi_kv.sum(axis=1, keepdims=True) # 正規化
+    
+    # 全トピックで共通の値を描画
+    ax = axes[0, 0]
+    ax.bar(x=0, height=beta, 
+           color='brown') # ハイパラ
+    ax.set_xticks(ticks=[0], labels=[''])
+    ax.set_ylim(ymin=0, ymax=axis_val_max)
+    ax.set_xlabel('')
+    ax.set_ylabel('value ($\\beta$)')
+    ax.set_title(f'iteration: {i}', loc='left')
+    ax.grid()
+
+    # 残りのサブプロットを非表示
+    axes[0, 1].axis('off')
+
+    for k in range(topic_num):
+
+        # 語彙ごとの基準値を描画
+        ax = axes[k+1, 0]
+        ax.bar(x=np.arange(stop=V)+1, height=N_kv[k], 
+               color=cmap(k%color_num)) # 単語数
+        ax.bar(x=np.arange(V)+1, height=beta, bottom=N_kv[k], 
+               color='brown', alpha=0.5, linewidth=1, linestyle='dashed') # ハイパラ
+        ax.set_ylim(ymin=0, ymax=axis_freq_max)
+        ax.set_xlabel('vocabulary ($v$)')
+        ax.set_ylabel('count ($N_{kv} + \\beta$)')
+        ax.set_title(f'iteration: {i}, $\\beta = {beta:.2f}$', loc='left')
+        ax.grid()
+        
+        # 語彙分布を描画
+        ax = axes[k+1, 1]
+        ax.bar(x=np.arange(stop=V)+1, height=phi_kv[k], 
+               color=cmap(k%color_num)) # 確率
+        ax.set_ylim(ymin=0, ymax=axis_prob_max)
+        ax.set_xlabel('vocabulary ($v$)')
+        ax.set_ylabel('probability ($\phi_{kv}$)')
+        ax.set_title(f'iteration: {i}, $k = {k+1}$', loc='left')
+        ax.grid()
+
+# 動画を作成
+ani = FuncAnimation(fig=fig, func=update, frames=frame_num, interval=100)
+
+# 動画を書出
+ani.save(
+    filename='../figure/ch8/ch8_1_estimated_word_dist.mp4', dpi=100, 
+    progress_callback = lambda i, n: print(f'frame: {i+1} / {n}')
+)
+
+# %%
+
+
 
 

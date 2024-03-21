@@ -30,10 +30,10 @@ true_K = 10
 true_alpha_k = np.repeat(1.0, repeats=true_K) # トピック分布
 true_beta_v  = np.repeat(1.0, repeats=V)      # 語彙分布
 
-# トピック分布を生成
+# トピック分布のパラメータを生成
 true_theta_dk = np.random.dirichlet(alpha=true_alpha_k, size=D)
 
-# 語彙分布を生成
+# 語彙分布のパラメータを生成
 true_phi_kv = np.random.dirichlet(alpha=true_beta_v, size=true_K)
 
 # 受け皿を初期化
@@ -187,7 +187,7 @@ for i in range(max_iter): # 繰り返し試行
 ### 作図の準備
 
 # 配色の共通化用のカラーマップを作成
-cmap = plt.get_cmap("tab10")
+cmap = plt.get_cmap('tab10')
 
 # カラーマップの色数を設定:(カラーマップに応じて固定)
 color_num = 10
@@ -258,6 +258,7 @@ frame_num = 10
 
 # 1フレーム当たりの試行回数を設定
 iter_per_frame = (max_iter + 1) // frame_num
+#iter_per_frame = 1
 
 # 描画する文書数を指定
 #doc_num = D
@@ -321,7 +322,7 @@ ani = FuncAnimation(fig=fig, func=update, frames=frame_num, interval=100)
 
 # 動画を書出
 ani.save(
-    filename='../figure/ch4/ch4_5_topic_set.mp4', 
+    filename='../figure/ch4/ch4_5_estimated_topic_set.mp4', 
     progress_callback = lambda i, n: print(f'frame: {i+1} / {n}')
 )
 
@@ -430,7 +431,7 @@ trace_phi_ikv += np.array(trace_beta_lt).reshape((max_iter+1, 1, V))
 trace_phi_ikv /= trace_phi_ikv.sum(axis=2, keepdims=True) # 正規化
 
 # 描画するトピック数を指定
-#doc_num = D
+#topic_num = K
 topic_num = 9
 
 # グラフサイズを設定
@@ -441,7 +442,7 @@ axis_size = np.ceil(trace_phi_ikv[:, :topic_num].max() /u)*u # u単位で切り�
 col_num = 3
 row_num = np.ceil(topic_num / col_num).astype('int')
 
-# ハイパーパラメータの推移を作図
+# パラメータの推移を作図
 fig, axes = plt.subplots(nrows=row_num, ncols=col_num, constrained_layout=True, 
                          figsize=(30, 15), dpi=100, facecolor='white')
 
@@ -473,7 +474,7 @@ plt.show()
 
 ### 推定したトピック分布の可視化
 
-# トピック分布を計算
+# トピック分布のパラメータを計算
 theta_dk  = N_dk + alpha_k
 theta_dk /= theta_dk.sum(axis=1, keepdims=True) # 正規化
 
@@ -491,7 +492,7 @@ row_num = np.ceil(doc_num / col_num).astype('int')
 
 # トピック分布を作図
 fig, axes = plt.subplots(nrows=row_num, ncols=col_num, constrained_layout=True, 
-                         figsize=(24, 15), dpi=100, facecolor='white')
+                         figsize=(24, 18), dpi=100, facecolor='white')
 
 for d in range(doc_num):
     
@@ -528,6 +529,7 @@ frame_num = 10
 
 # 1フレーム当たりの試行回数を設定
 iter_per_frame = (max_iter + 1) // frame_num
+#iter_per_frame = 1
 
 # 描画する文書数を指定
 #doc_num = D
@@ -541,7 +543,7 @@ axis_prob_max = 0.5
 
 # グラフオブジェクトを初期化
 fig, axes = plt.subplots(nrows=doc_num+1, ncols=2, constrained_layout=True, 
-                         figsize=(16, 30), facecolor='white')
+                         figsize=(16, 36), facecolor='white')
 fig.supylabel('document ($d$)')
 fig.suptitle('topic distribution', fontsize=20)
 
@@ -559,7 +561,7 @@ def update(i):
     alpha_k = trace_alpha_lt[i]
     N_dk    = trace_Ndk_lt[i]
     
-    # トピック分布を計算
+    # トピック分布のパラメータを計算
     theta_dk  = N_dk + alpha_k
     theta_dk /= theta_dk.sum(axis=1, keepdims=True) # 正規化
 
@@ -607,7 +609,7 @@ ani = FuncAnimation(fig=fig, func=update, frames=frame_num, interval=100)
 
 # 動画を書出
 ani.save(
-    filename='../figure/ch4/ch4_5_topic_dist.mp4', dpi=100, 
+    filename='../figure/ch4/ch4_5_estimated_topic_dist.mp4', dpi=100, 
     progress_callback = lambda i, n: print(f'frame: {i+1} / {n}')
 )
 
@@ -615,7 +617,7 @@ ani.save(
 
 ### 推定した単語分布の可視化
 
-# 語彙分布を計算
+# 語彙分布のパラメータを計算
 phi_kv  = N_kv + beta_v
 phi_kv /= phi_kv.sum(axis=1, keepdims=True) # 正規化
 
@@ -670,6 +672,7 @@ frame_num = 10
 
 # 1フレーム当たりの試行回数を設定
 iter_per_frame = (max_iter + 1) // frame_num
+#iter_per_frame = 1
 
 # 描画するトピック数を指定
 #topic_num = K
@@ -701,7 +704,7 @@ def update(i):
     beta_v = trace_beta_lt[i]
     N_kv   = trace_Nkv_lt[i]
     
-    # 語彙分布を計算
+    # 語彙分布のパラメータを計算
     phi_kv  = N_kv + beta_v
     phi_kv /= phi_kv.sum(axis=1, keepdims=True) # 正規化
     
@@ -748,7 +751,7 @@ ani = FuncAnimation(fig=fig, func=update, frames=frame_num, interval=100)
 
 # 動画を書出
 ani.save(
-    filename='../figure/ch4/ch4_5_word_dist.mp4', dpi=100, 
+    filename='../figure/ch4/ch4_5_estimated_word_dist.mp4', dpi=100, 
     progress_callback = lambda i, n: print(f'frame: {i+1} / {n}')
 )
 

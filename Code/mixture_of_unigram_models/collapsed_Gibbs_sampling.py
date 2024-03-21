@@ -30,13 +30,13 @@ true_K = 10
 true_alpha = 1.0 # トピック分布
 true_beta  = 1.0 # 語彙分布
 
-# トピック分布を生成
+# トピック分布のパラメータを生成
 true_theta_k = np.random.dirichlet(
     alpha=np.repeat(true_alpha, repeats=true_K), 
     size=1
 ).reshape(true_K)
 
-# 語彙分布を生成
+# 語彙分布のパラメータを生成
 true_phi_kv = np.random.dirichlet(
     alpha=np.repeat(true_beta, repeats=V), 
     size=true_K
@@ -188,7 +188,7 @@ for i in range(max_iter): # 繰り返し試行
 z_d = z_d.astype('int')
 
 # 配色の共通化用のカラーマップを作成
-cmap = plt.get_cmap("tab10")
+cmap = plt.get_cmap('tab10')
 
 # カラーマップの色数を設定:(カラーマップに応じて固定)
 color_num = 10
@@ -265,6 +265,7 @@ frame_num = 10
 
 # 1フレーム当たりの試行回数を設定
 iter_per_frame = (max_iter + 1) // frame_num
+#iter_per_frame = 1
 
 # 描画する文書数を指定
 #doc_num = D
@@ -341,7 +342,7 @@ ani = FuncAnimation(fig=fig, func=update, frames=frame_num, interval=100)
 
 # 動画を書出
 ani.save(
-    filename='../figure/ch3/ch3_5_topic_set.mp4', dpi=100, 
+    filename='../figure/ch3/ch3_5_estimated_topic_set.mp4', dpi=100, 
     progress_callback = lambda i, n: print(f'frame: {i+1} / {n}')
 )
 
@@ -354,7 +355,7 @@ trace_alpha_i = np.array(trace_alpha_lt)
 
 # グラフサイズを設定
 u = 0.5
-axis_size = np.ceil(trace_alpha_i.max()/u)*u # u単位で切り上げ
+axis_size = np.ceil(trace_alpha_i.max() /u)*u # u単位で切り上げ
 
 # ハイパーパラメータの推移を作図
 fig, ax = plt.subplots(figsize=(8, 6), facecolor='white')
@@ -375,7 +376,7 @@ trace_beta_i = np.array(trace_beta_lt)
 
 # グラフサイズを設定
 u = 0.5
-axis_size = np.ceil(trace_beta_i.max()/u)*u # u単位で切り上げ
+axis_size = np.ceil(trace_beta_i.max() /u)*u # u単位で切り上げ
 
 # ハイパーパラメータの推移を作図
 fig, ax = plt.subplots(figsize=(8, 6), facecolor='white')
@@ -398,7 +399,7 @@ trace_theta_ik /= trace_theta_ik.sum(axis=1, keepdims=True) # 正規化
 
 # グラフサイズを設定
 u = 0.5
-axis_size = np.ceil(trace_theta_ik.max()/u)*u # u単位で切り上げ
+axis_size = np.ceil(trace_theta_ik.max() /u)*u # u単位で切り上げ
 
 # パラメータの推移を作図
 fig, ax = plt.subplots(figsize=(8, 6), facecolor='white')
@@ -420,19 +421,23 @@ trace_phi_ikv  = np.array(trace_Nkv_lt)
 trace_phi_ikv += np.array(trace_beta_lt).reshape((max_iter+1, 1, 1))
 trace_phi_ikv /= trace_phi_ikv.sum(axis=2, keepdims=True) # 正規化
 
+# 描画するトピック数を指定
+#topic_num = K
+topic_num = 9
+
 # グラフサイズを設定
 u = 0.01
-axis_size = np.ceil(trace_phi_ikv.max()/u)*u # u単位で切り上げ
+axis_size = np.ceil(trace_phi_ikv[:, :topic_num].max() /u)*u # u単位で切り上げ
 
 # サブプロットの列数を指定:(1 < 列数 < K)
-col_num = 2
-row_num = np.ceil(K / col_num).astype('int')
+col_num = 3
+row_num = np.ceil(topic_num / col_num).astype('int')
 
-# ハイパーパラメータの推移を作図
+# パラメータの推移を作図
 fig, axes = plt.subplots(nrows=row_num, ncols=col_num, constrained_layout=True, 
-                         figsize=(16, 18), facecolor='white')
+                         figsize=(30, 15), facecolor='white')
 
-for k in range(K):
+for k in range(topic_num):
     
     # サブプロットを抽出
     r = k // col_num
@@ -490,6 +495,7 @@ frame_num = 100
 
 # 1フレーム当たりの試行回数を設定
 iter_per_frame = (max_iter + 1) // frame_num
+#iter_per_frame = 1
 
 # グラフサイズを設定
 u = 1
@@ -516,10 +522,6 @@ def update(i):
     alpha = trace_alpha_lt[i]
     D_k   = trace_Dk_lt[i]
 
-    # トピック分布を計算
-    theta_k  = D_k + alpha
-    theta_k /= theta_k.sum() # 正規化
-
     # 全文書で共通の値を描画
     ax = axes[0]
     ax.bar(x=0, height=alpha, 
@@ -543,6 +545,10 @@ def update(i):
     ax.set_title(f'iteration: {i}, $\\alpha = {alpha:.2f}$', loc='left')
     ax.grid()
 
+    # トピック分布のパラメータを計算
+    theta_k  = D_k + alpha
+    theta_k /= theta_k.sum() # 正規化
+
     # トピック分布を描画
     ax = axes[2]
     ax.bar(x=np.arange(stop=K)+1, height=theta_k, 
@@ -558,7 +564,7 @@ ani = FuncAnimation(fig=fig, func=update, frames=frame_num, interval=100)
 
 # 動画を書出
 ani.save(
-    filename='../figure/ch3/ch3_5_topic_dist.mp4', dpi=100, 
+    filename='../figure/ch3/ch3_5_estimated_topic_dist.mp4', dpi=100, 
     progress_callback = lambda i, n: print(f'frame: {i+1} / {n}')
 )
 
@@ -566,23 +572,27 @@ ani.save(
 
 ### 推定した単語分布の可視化
 
-# 語彙分布を計算
+# 語彙分布のパラメータを計算
 phi_kv  = N_kv + beta
 phi_kv /= phi_kv.sum(axis=1, keepdims=True) # 正規化
 
+# 描画するトピック数を指定
+#topic_num = K
+topic_num = 9
+
 # グラフサイズを設定
 u = 0.01
-axis_size = np.ceil(phi_kv.max() /u)*u # u単位で切り上げ
+axis_size = np.ceil(phi_kv[:topic_num].max() /u)*u # u単位で切り上げ
 
 # サブプロットの列数を指定:(1 < 列数 < K)
-col_num = 2
-row_num = np.ceil(K / col_num).astype('int')
+col_num = 3
+row_num = np.ceil(topic_num / col_num).astype('int')
 
 # 語彙分布を作図
 fig, axes = plt.subplots(nrows=row_num, ncols=col_num, constrained_layout=True, 
-                         figsize=(16, 18), dpi=100, facecolor='white')
+                         figsize=(30, 15), dpi=100, facecolor='white')
 
-for k in range(K):
+for k in range(topic_num):
     
     # サブプロットを抽出
     r = k // col_num
@@ -617,17 +627,22 @@ frame_num = 100
 
 # 1フレーム当たりの試行回数を設定
 iter_per_frame = (max_iter + 1) // frame_num
+#iter_per_frame = 1
+
+# 描画するトピック数を指定
+#topic_num = K
+topic_num = 9
 
 # グラフサイズを設定
 u = 1
 axis_val_max = np.ceil(max(trace_beta_lt) /u)*u # u単位で切り上げ
 u = 5
-axis_freq_max = np.ceil(max([(trace_Nkv_lt[i] + trace_beta_lt[i]).max() for i in range(max_iter+1)]) /u)*u # u単位で切り上げ
+axis_freq_max = np.ceil(max([(trace_Nkv_lt[i][:topic_num] + trace_beta_lt[i]).max() for i in range(max_iter+1)]) /u)*u # u単位で切り上げ
 axis_prob_max = 0.1
 
 # グラフオブジェクトを初期化
-fig, axes = plt.subplots(nrows=K+1, ncols=2, constrained_layout=True, 
-                         figsize=(16, 36), facecolor='white')
+fig, axes = plt.subplots(nrows=topic_num+1, ncols=2, constrained_layout=True, 
+                         figsize=(20, 30), facecolor='white')
 fig.suptitle('word distribution', fontsize=20)
 
 # 作図処理を定義
@@ -644,7 +659,7 @@ def update(i):
     beta = trace_beta_lt[i]
     N_kv = trace_Nkv_lt[i]
 
-    # 単語分布を計算
+    # 単語分布のパラメータを計算
     phi_kv  = N_kv + beta
     phi_kv /= phi_kv.sum(axis=1, keepdims=True) # 正規化
     
@@ -662,7 +677,7 @@ def update(i):
     # 残りのサブプロットを非表示
     axes[0, 1].axis('off')
 
-    for k in range(K):
+    for k in range(topic_num):
 
         # 語彙ごとの基準値を描画
         ax = axes[k+1, 0]
@@ -691,7 +706,7 @@ ani = FuncAnimation(fig=fig, func=update, frames=frame_num, interval=100)
 
 # 動画を書出
 ani.save(
-    filename='../figure/ch3/ch3_5_word_dist.mp4', dpi=100, 
+    filename='../figure/ch3/ch3_5_estimated_word_dist.mp4', dpi=100, 
     progress_callback = lambda i, n: print(f'frame: {i+1} / {n}')
 )
 
