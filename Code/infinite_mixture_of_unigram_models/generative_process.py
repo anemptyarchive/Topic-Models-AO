@@ -49,7 +49,7 @@ N_dv = np.zeros(shape=(D, V), dtype='int')
 # 文書データを生成
 for d in range(D): # 文書ごと
     
-    # トピック分布のパラメータを計算
+    # トピック分布のパラメータを計算:式(8.2)
     if true_K == 0: # (初回の場合)
         true_theta_k = np.array([1.0])
     else:
@@ -198,8 +198,9 @@ axis_size = np.ceil(true_theta_k.max() /u)*u # u単位で切り上げ
 # トピック分布を作図
 fig, ax = plt.subplots(figsize=(8, 6), dpi=100, facecolor='white')
 ax.bar(x=np.arange(stop=true_K+1)+1, height=true_theta_k, 
-       color=[cmap(k%color_num) for k in range(true_K)]+['whitesmoke'], 
-       edgecolor='black', linestyle='dashed', linewidth=[0]*true_K+[1]) # 確率
+       color=[cmap(k%color_num) for k in range(true_K)]+['whitesmoke']) # 確率
+ax.bar(x=true_K+1, height=true_theta_k[true_K], 
+       color='none', edgecolor='black', linestyle='dashed', linewidth=1) # 新規確率
 ax.set_ylim(ymin=0, ymax=axis_size)
 ax.set_xlabel('topic ($k$)')
 ax.set_ylabel('probability ($\\theta_k$)')
@@ -257,8 +258,9 @@ def update(d):
     # トピック分布を描画
     ax = axes[1]
     ax.bar(x=np.arange(stop=tmp_K+1)+1, height=tmp_theta_k, 
-           color=[cmap(k%color_num) for k in range(tmp_K)]+['whitesmoke'], 
-           edgecolor='black', linestyle='dashed', linewidth=[0]*tmp_K+[1]) # 確率
+           color=[cmap(k%color_num) for k in range(tmp_K)]+['whitesmoke']) # 確率
+    ax.bar(x=tmp_K+1, height=tmp_theta_k[tmp_K], 
+           color='none', edgecolor='black', linestyle='dashed', linewidth=1) # 新規確率
     ax.set_xlim(xmin=0.5, xmax=true_K+1.5)
     ax.set_ylim(ymin=0, ymax=axis_prob_max)
     ax.set_xlabel('topic ($k$)')
