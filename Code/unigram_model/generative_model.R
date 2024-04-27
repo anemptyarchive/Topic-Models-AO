@@ -76,8 +76,20 @@ for(d in 1:D) {
 
 ### ・データの生成：簡易版 -----
 
+# 各文書の単語数を生成
+N_d <- sample(x = 10:20, size = D) # 下限・上限を指定
+
 # 文書ごとの各語彙の出現回数を生成
-#N_dv <- rmultinom(n = D, size = N_d, prob = true_phi_v)
+N_dv <- matrix(NA, nrow = D, ncol = V)
+for(d in 1:D) { 
+  
+  # 各語彙の出現回数を生成
+  N_dv[d, ] <- rmultinom(n = 1, size = N_d[d], prob = true_phi_v) |> # (多項乱数)
+    as.vector()
+  
+  # 途中経過を表示
+  print(paste0("document: ", d, ", words: ", N_d[d]))
+}
 
 
 ### ・データの集計 -----
@@ -107,6 +119,12 @@ N_d <- rowSums(N_dv)
 
 # 全文書の単語数を取得
 N <- sum(N_dv)
+
+# 文書数を取得
+D <- nrow(N_dv)
+
+# 語彙数を取得
+V <- ncol(N_dv)
 
 
 ### ・データの可視化
