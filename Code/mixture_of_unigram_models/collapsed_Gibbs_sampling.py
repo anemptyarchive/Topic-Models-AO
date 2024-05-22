@@ -2,7 +2,7 @@
 # chapter 3.5
 # 混合ユニグラムモデル
 # 崩壊型ギブスサンプリング
-# パラメータが一様な場合
+# 一様パラメータの場合
 
 # %%
 
@@ -15,16 +15,16 @@ from matplotlib.animation import FuncAnimation
 # %%
 
 ### 簡易文書データの作成：(混合モデル)
-# (詳細はgenerative_process.pyを参照)
+# (詳細はgenerative_model.pyを参照)
 
 # 文書数を指定
-D = 30
+D = 100
 
 # 語彙数を指定
-V = 100
+V = 150
 
 # トピック数を指定
-true_K = 10
+true_K = 9
 
 # ハイパーパラメータを指定
 true_alpha = 1.0 # トピック分布
@@ -58,7 +58,7 @@ for d in range(D): # 文書ごと
     true_z_d[d] = k
 
     # 単語数を生成
-    N_d[d] = np.random.randint(low=100, high=200, size=1) # 下限・上限を指定
+    N_d[d] = np.random.randint(low=50, high=100, size=1) # 下限・上限を指定
 
     # 受け皿を初期化
     tmp_w_n = np.repeat(np.nan, repeats=N_d[d]) # 各単語の語彙
@@ -94,7 +94,7 @@ V = N_dv.shape[1]
 N_d = N_dv.sum(axis=1)
 
 # トピック数を指定
-K = 9
+K = 10
 
 # ハイパーパラメータの初期値を指定
 alpha = 1.0 # トピック分布
@@ -146,7 +146,8 @@ for i in range(max_iter): # 繰り返し試行
         log_prob_z_k -= loggamma(N_k + N_d[d] + V*beta)
         log_prob_z_k += loggamma(N_kv + N_dv[d] + beta).sum(axis=1)
         log_prob_z_k -= loggamma(N_kv + beta).sum(axis=1)
-        prob_z_k      = np.exp(log_prob_z_k - log_prob_z_k.min()) # (アンダーフロー対策)
+        log_prob_z_k -= log_prob_z_k.min()   # アンダーフロー対策
+        prob_z_k      = np.exp(log_prob_z_k) # オーバーフロー対策
         prob_z_k     /= prob_z_k.sum() # 正規化
 
         # トピックをサンプリング
@@ -199,7 +200,7 @@ color_num = 10
 
 # 描画する文書数を指定
 #doc_num = D
-doc_num = 10
+doc_num = 30
 
 # グラフサイズを設定
 u = 5
@@ -207,12 +208,12 @@ axis_Ndv_max = np.ceil(N_dv[:doc_num].max() /u)*u # u単位で切り上げ
 axis_Dk_max  = np.ceil(D_k.max() /u)*u # u単位で切り上げ
 
 # サブプロットの列数を指定:(1 < 列数 < D+1)
-col_num = 3
+col_num = 4
 row_num = np.ceil((doc_num+1) / col_num).astype('int')
 
 # 文書データを作図
 fig, axes = plt.subplots(nrows=row_num, ncols=col_num, constrained_layout=True, 
-                         figsize=(30, 20), dpi=100, facecolor='white')
+                         figsize=(20, 20), dpi=100, facecolor='white')
 
 for d in range(doc_num):
     
@@ -252,7 +253,7 @@ ax.grid()
 
 fig.supxlabel('document ($d$)')
 fig.supylabel('document ($d$)')
-fig.suptitle('document data', fontsize=20)
+fig.suptitle('document data (collapsed Gibbs sampling)', fontsize=20)
 plt.show()
 
 # %%
@@ -264,12 +265,12 @@ plt.show()
 frame_num = 10
 
 # 1フレーム当たりの試行回数を設定
-iter_per_frame = (max_iter + 1) // frame_num
-#iter_per_frame = 1
+#iter_per_frame = (max_iter+1) // frame_num
+iter_per_frame = 1
 
 # 描画する文書数を指定
 #doc_num = D
-doc_num = 10
+doc_num = 30
 
 # グラフサイズを設定
 u = 5
@@ -277,15 +278,15 @@ axis_Ndv_max = np.ceil(N_dv[:doc_num].max() /u)*u # u単位で切り上げ
 axis_Dk_max  = np.ceil(np.max(trace_Dk_lt) /u)*u # u単位で切り上げ
 
 # サブプロットの列数を指定:(1 < 列数 < D+1)
-col_num = 3
+col_num = 4
 row_num = np.ceil((doc_num+1) / col_num).astype('int')
 
 # グラフオブジェクトを初期化
 fig, axes = plt.subplots(nrows=row_num, ncols=col_num, constrained_layout=True, 
-                         figsize=(30, 20), dpi=100, facecolor='white')
+                         figsize=(20, 20), dpi=100, facecolor='white')
 fig.supxlabel('document ($d$)')
 fig.supylabel('document ($d$)')
-fig.suptitle('document data', fontsize=20)
+fig.suptitle('document data (collapsed Gibbs sampling)', fontsize=20)
 
 # 作図処理を定義
 def update(i):
@@ -312,8 +313,12 @@ def update(i):
         k = z_d[d]
         
         # 語彙頻度を描画
+        if i == 0: # (初回のみ)
+            ax.bar(x=np.arange(stop=V)+1, height=N_dv[d], 
+                   color='white', 
+                   edgecolor='black', linestyle='dashed', linewidth=1) # 単語数
         ax.bar(x=np.arange(stop=V)+1, height=N_dv[d], 
-            color=cmap(k%color_num)) # 単語数
+               color=cmap(k%color_num)) # 単語数
         ax.set_ylim(ymin=0, ymax=axis_Ndv_max)
         ax.set_xlabel('vocabulary ($v$)')
         ax.set_ylabel('frequency ($N_{dv}$)')
@@ -338,128 +343,13 @@ def update(i):
     ax.grid()
 
 # 動画を作成
-ani = FuncAnimation(fig=fig, func=update, frames=frame_num, interval=100)
+ani = FuncAnimation(fig=fig, func=update, frames=frame_num+1, interval=100)
 
 # 動画を書出
 ani.save(
-    filename='../figure/ch3/ch3_5_estimated_topic_set.mp4', dpi=100, 
-    progress_callback = lambda i, n: print(f'frame: {i+1} / {n}')
+    filename='../figure/ch3/ch3_5/estimated_topic_set.mp4', 
+    progress_callback = lambda i, n: print(f'frame: {i} / {n}')
 )
-
-# %%
-
-### 推定したトピック分布のハイパーパラメータの推移の可視化
-
-# 配列に変換
-trace_alpha_i = np.array(trace_alpha_lt)
-
-# グラフサイズを設定
-u = 0.5
-axis_size = np.ceil(trace_alpha_i.max() /u)*u # u単位で切り上げ
-
-# ハイパーパラメータの推移を作図
-fig, ax = plt.subplots(figsize=(8, 6), facecolor='white')
-ax.plot(np.arange(max_iter+1), trace_alpha_i) # 更新値
-ax.set_ylim(ymin=0, ymax=axis_size)
-ax.set_xlabel('iteration')
-ax.set_ylabel('value ($\\alpha$)')
-fig.suptitle('hyperparameter of topic distribution', fontsize=20)
-ax.grid()
-plt.show()
-
-# %%
-
-### 推定した単語分布のハイパーパラメータの推移の可視化
-
-# 配列に変換
-trace_beta_i = np.array(trace_beta_lt)
-
-# グラフサイズを設定
-u = 0.5
-axis_size = np.ceil(trace_beta_i.max() /u)*u # u単位で切り上げ
-
-# ハイパーパラメータの推移を作図
-fig, ax = plt.subplots(figsize=(8, 6), facecolor='white')
-ax.plot(np.arange(max_iter+1), trace_beta_i) # 更新値
-ax.set_xlabel('iteration')
-ax.set_ylabel('value ($\\beta$)')
-fig.suptitle('hyperparameter of word distribution', fontsize=20)
-ax.set_ylim(ymin=0, ymax=axis_size)
-ax.grid()
-plt.show()
-
-# %%
-
-### 推定したトピック分布のパラメータの推移の可視化
-
-# 配列に変換
-trace_theta_ik  = np.array(trace_Dk_lt)
-trace_theta_ik += np.array(trace_alpha_lt).reshape((max_iter+1, 1))
-trace_theta_ik /= trace_theta_ik.sum(axis=1, keepdims=True) # 正規化
-
-# グラフサイズを設定
-u = 0.5
-axis_size = np.ceil(trace_theta_ik.max() /u)*u # u単位で切り上げ
-
-# パラメータの推移を作図
-fig, ax = plt.subplots(figsize=(8, 6), facecolor='white')
-ax.plot(np.arange(max_iter+1), trace_theta_ik) # 更新値
-ax.set_ylim(ymin=0, ymax=axis_size)
-ax.set_xlabel('iteration')
-ax.set_ylabel('probability ($\\theta_k$)')
-ax.set_title(f'$K = {K}$', loc='left')
-fig.suptitle('parameter of topic distribution', fontsize=20)
-ax.grid()
-plt.show()
-
-# %%
-
-### 推定した単語分布のパラメータの推移の可視化
-
-# 配列に変換
-trace_phi_ikv  = np.array(trace_Nkv_lt)
-trace_phi_ikv += np.array(trace_beta_lt).reshape((max_iter+1, 1, 1))
-trace_phi_ikv /= trace_phi_ikv.sum(axis=2, keepdims=True) # 正規化
-
-# 描画するトピック数を指定
-#topic_num = K
-topic_num = 9
-
-# グラフサイズを設定
-u = 0.01
-axis_size = np.ceil(trace_phi_ikv[:, :topic_num].max() /u)*u # u単位で切り上げ
-
-# サブプロットの列数を指定:(1 < 列数 < K)
-col_num = 3
-row_num = np.ceil(topic_num / col_num).astype('int')
-
-# パラメータの推移を作図
-fig, axes = plt.subplots(nrows=row_num, ncols=col_num, constrained_layout=True, 
-                         figsize=(30, 15), facecolor='white')
-
-for k in range(topic_num):
-    
-    # サブプロットを抽出
-    r = k // col_num
-    c = k % col_num
-    ax = axes[r, c]
-
-    # パラメータの推移を描画
-    ax.plot(np.arange(max_iter+1), trace_phi_ikv[:, k]) # 更新値
-    ax.set_ylim(ymin=0, ymax=axis_size)
-    ax.set_xlabel('iteration')
-    ax.set_ylabel('probability ($\\phi_{kv}$)')
-    ax.set_title(f'$k = {k+1}, V = {V}$', loc='left')
-    ax.grid()
-
-# 残りのサブプロットを非表示
-for c in range(c+1, col_num):
-    axes[r, c].axis('off')
-
-fig.supxlabel('topic ($k$)')
-fig.supylabel('topic ($k$)')
-fig.suptitle('parameter of word distribution', fontsize=20)
-plt.show()
 
 # %%
 
@@ -481,7 +371,7 @@ ax.set_ylim(ymin=0, ymax=axis_size)
 ax.set_xlabel('topic ($k$)')
 ax.set_ylabel('probability ($\\theta_k$)')
 ax.set_title(f'iteration: {max_iter}, $\\alpha = {alpha:.2f}$', loc='left')
-fig.suptitle('topic distribution', fontsize=20)
+fig.suptitle('topic distribution (collapsed Gibbs sampling)', fontsize=20)
 ax.grid()
 plt.show()
 
@@ -494,7 +384,7 @@ plt.show()
 frame_num = 100
 
 # 1フレーム当たりの試行回数を設定
-iter_per_frame = (max_iter + 1) // frame_num
+iter_per_frame = (max_iter+1) // frame_num
 #iter_per_frame = 1
 
 # グラフサイズを設定
@@ -506,8 +396,8 @@ axis_prob_max = 0.5
 
 # グラフオブジェクトを初期化
 fig, axes = plt.subplots(nrows=1, ncols=3, constrained_layout=True, 
-                         figsize=(16, 6), facecolor='white')
-fig.suptitle('topic distribution', fontsize=20)
+                         figsize=(16, 6), dpi=100, facecolor='white')
+fig.suptitle('topic distribution (collapsed Gibbs sampling)', fontsize=20)
 
 # 作図処理を定義
 def update(i):
@@ -535,10 +425,10 @@ def update(i):
 
     # トピックごとの基準値を描画
     ax = axes[1]
-    ax.bar(x=np.arange(stop=K)+1, height=D_k, 
+    ax.bar(x=np.arange(K)+1, height=alpha, 
+           color='brown', linewidth=1, linestyle='dashed') # ハイパラ
+    ax.bar(x=np.arange(stop=K)+1, bottom=alpha, height=D_k, 
            color=[cmap(k%color_num) for k in range(K)]) # 文書数
-    ax.bar(x=np.arange(K)+1, height=alpha, bottom=D_k, 
-           color='brown', alpha=0.5, linewidth=1, linestyle='dashed') # ハイパラ
     ax.set_ylim(ymin=0, ymax=axis_freq_max)
     ax.set_xlabel('topic ($k$)')
     ax.set_ylabel('count ($D_k + \\alpha$)')
@@ -560,11 +450,11 @@ def update(i):
     ax.grid()
 
 # 動画を作成
-ani = FuncAnimation(fig=fig, func=update, frames=frame_num, interval=100)
+ani = FuncAnimation(fig=fig, func=update, frames=frame_num+1, interval=100)
 
 # 動画を書出
 ani.save(
-    filename='../figure/ch3/ch3_5_estimated_topic_dist.mp4', dpi=100, 
+    filename='../figure/ch3/ch3_5/estimated_topic_dist.mp4', 
     progress_callback = lambda i, n: print(f'frame: {i+1} / {n}')
 )
 
@@ -578,7 +468,7 @@ phi_kv /= phi_kv.sum(axis=1, keepdims=True) # 正規化
 
 # 描画するトピック数を指定
 #topic_num = K
-topic_num = 9
+topic_num = 10
 
 # グラフサイズを設定
 u = 0.01
@@ -590,7 +480,7 @@ row_num = np.ceil(topic_num / col_num).astype('int')
 
 # 語彙分布を作図
 fig, axes = plt.subplots(nrows=row_num, ncols=col_num, constrained_layout=True, 
-                         figsize=(30, 15), dpi=100, facecolor='white')
+                         figsize=(30, 20), dpi=100, facecolor='white')
 
 for k in range(topic_num):
     
@@ -614,7 +504,7 @@ for c in range(c+1, col_num):
 
 fig.supxlabel('topic ($k$)')
 fig.supylabel('topic ($k$)')
-fig.suptitle('word distribution', fontsize=20)
+fig.suptitle('word distribution (collapsed Gibbs sampling)', fontsize=20)
 plt.show()
 
 # %%
@@ -626,7 +516,7 @@ plt.show()
 frame_num = 100
 
 # 1フレーム当たりの試行回数を設定
-iter_per_frame = (max_iter + 1) // frame_num
+iter_per_frame = (max_iter+1) // frame_num
 #iter_per_frame = 1
 
 # 描画するトピック数を指定
@@ -642,8 +532,8 @@ axis_prob_max = 0.1
 
 # グラフオブジェクトを初期化
 fig, axes = plt.subplots(nrows=topic_num+1, ncols=2, constrained_layout=True, 
-                         figsize=(20, 30), facecolor='white')
-fig.suptitle('word distribution', fontsize=20)
+                         figsize=(20, 30), dpi=100, facecolor='white')
+fig.suptitle('word distribution (collapsed Gibbs sampling)', fontsize=20)
 
 # 作図処理を定義
 def update(i):
@@ -666,7 +556,7 @@ def update(i):
     # 全トピックで共通の値を描画
     ax = axes[0, 0]
     ax.bar(x=0, height=beta, 
-           color='brown') # ハイパラ
+           color='navy') # ハイパラ
     ax.set_xticks(ticks=[0], labels=[''])
     ax.set_ylim(ymin=0, ymax=axis_val_max)
     ax.set_xlabel('')
@@ -681,10 +571,10 @@ def update(i):
 
         # 語彙ごとの基準値を描画
         ax = axes[k+1, 0]
-        ax.bar(x=np.arange(stop=V)+1, height=N_kv[k], 
+        ax.bar(x=np.arange(stop=V)+1, height=beta, 
+               color='navy', linewidth=1, linestyle='dashed') # ハイパラ
+        ax.bar(x=np.arange(V)+1, bottom=beta, height=N_kv[k], 
                color=cmap(k%color_num)) # 単語数
-        ax.bar(x=np.arange(V)+1, height=beta, bottom=N_kv[k], 
-               color='brown', alpha=0.5, linewidth=1, linestyle='dashed') # ハイパラ
         ax.set_ylim(ymin=0, ymax=axis_freq_max)
         ax.set_xlabel('vocabulary ($v$)')
         ax.set_ylabel('count ($N_{kv} + \\beta$)')
@@ -702,13 +592,128 @@ def update(i):
         ax.grid()
 
 # 動画を作成
-ani = FuncAnimation(fig=fig, func=update, frames=frame_num, interval=100)
+ani = FuncAnimation(fig=fig, func=update, frames=frame_num+1, interval=100)
 
 # 動画を書出
 ani.save(
-    filename='../figure/ch3/ch3_5_estimated_word_dist.mp4', dpi=100, 
-    progress_callback = lambda i, n: print(f'frame: {i+1} / {n}')
+    filename='../figure/ch3/ch3_5/estimated_word_dist.mp4', 
+    progress_callback = lambda i, n: print(f'frame: {i} / {n}')
 )
+
+# %%
+
+### 推定したトピック分布のハイパーパラメータの推移の可視化
+
+# 配列に変換
+trace_alpha_i = np.array(trace_alpha_lt)
+
+# グラフサイズを設定
+u = 2
+axis_size = np.ceil(trace_alpha_i.max() /u)*u # u単位で切り上げ
+
+# ハイパーパラメータの推移を作図
+fig, ax = plt.subplots(figsize=(8, 6), dpi=100, facecolor='white')
+ax.plot(np.arange(max_iter+1), trace_alpha_i) # 更新値
+ax.set_ylim(ymin=0, ymax=axis_size)
+ax.set_xlabel('iteration')
+ax.set_ylabel('value ($\\alpha$)')
+fig.suptitle('hyperparameter of topic distribution (collapsed Gibbs sampling)', fontsize=20)
+ax.grid()
+plt.show()
+
+# %%
+
+### 推定した単語分布のハイパーパラメータの推移の可視化
+
+# 配列に変換
+trace_beta_i = np.array(trace_beta_lt)
+
+# グラフサイズを設定
+u = 2
+axis_size = np.ceil(trace_beta_i.max() /u)*u # u単位で切り上げ
+
+# ハイパーパラメータの推移を作図
+fig, ax = plt.subplots(figsize=(8, 6), dpi=100, facecolor='white')
+ax.plot(np.arange(max_iter+1), trace_beta_i) # 更新値
+ax.set_xlabel('iteration')
+ax.set_ylabel('value ($\\beta$)')
+fig.suptitle('hyperparameter of word distribution (collapsed Gibbs sampling)', fontsize=20)
+ax.set_ylim(ymin=0, ymax=axis_size)
+ax.grid()
+plt.show()
+
+# %%
+
+### 推定したトピック分布のパラメータの推移の可視化
+
+# 配列に変換
+trace_theta_ik  = np.array(trace_Dk_lt)
+trace_theta_ik += np.array(trace_alpha_lt).reshape((max_iter+1, 1))
+trace_theta_ik /= trace_theta_ik.sum(axis=1, keepdims=True) # 正規化
+
+# グラフサイズを設定
+u = 0.5
+axis_size = np.ceil(trace_theta_ik.max() /u)*u # u単位で切り上げ
+
+# パラメータの推移を作図
+fig, ax = plt.subplots(figsize=(8, 6), dpi=100, facecolor='white')
+ax.plot(np.arange(max_iter+1), trace_theta_ik) # 更新値
+ax.set_ylim(ymin=0, ymax=axis_size)
+ax.set_xlabel('iteration')
+ax.set_ylabel('probability ($\\theta_k$)')
+ax.set_title(f'$K = {K}$', loc='left')
+fig.suptitle('parameter of topic distribution (collapsed Gibbs sampling)', fontsize=20)
+ax.grid()
+plt.show()
+
+# %%
+
+### 推定した単語分布のパラメータの推移の可視化
+
+# 配列に変換
+trace_phi_ikv  = np.array(trace_Nkv_lt)
+trace_phi_ikv += np.array(trace_beta_lt).reshape((max_iter+1, 1, 1))
+trace_phi_ikv /= trace_phi_ikv.sum(axis=2, keepdims=True) # 正規化
+
+# 描画するトピック数を指定
+#topic_num = K
+topic_num = 10
+
+# グラフサイズを設定
+u = 0.01
+axis_size = np.ceil(trace_phi_ikv[:, :topic_num].max() /u)*u # u単位で切り上げ
+
+# サブプロットの列数を指定:(1 < 列数 < K)
+col_num = 3
+row_num = np.ceil(topic_num / col_num).astype('int')
+
+# パラメータの推移を作図
+fig, axes = plt.subplots(nrows=row_num, ncols=col_num, constrained_layout=True, 
+                         figsize=(20, 20), dpi=100, facecolor='white')
+
+for k in range(topic_num):
+    
+    # サブプロットを抽出
+    r = k // col_num
+    c = k % col_num
+    ax = axes[r, c]
+
+    # パラメータの推移を描画
+    ax.plot(np.arange(max_iter+1), trace_phi_ikv[:, k]) # 更新値
+    ax.set_ylim(ymin=0, ymax=axis_size)
+    ax.set_xlabel('iteration')
+    ax.set_ylabel('probability ($\\phi_{kv}$)')
+    ax.set_title(f'$k = {k+1}, V = {V}$', loc='left')
+    ax.grid()
+
+# 残りのサブプロットを非表示
+for c in range(c+1, col_num):
+    axes[r, c].axis('off')
+
+fig.supxlabel('topic ($k$)')
+fig.supylabel('topic ($k$)')
+fig.suptitle('parameter of word distribution (collapsed Gibbs sampling)', fontsize=20)
+plt.show()
 
 # %%
 

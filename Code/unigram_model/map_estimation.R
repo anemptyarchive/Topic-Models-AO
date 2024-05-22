@@ -7,6 +7,7 @@
 
 # 利用パッケージ
 library(tidyverse)
+library(MCMCpack)
 library(ggpattern)
 library(gganimate)
 
@@ -138,15 +139,111 @@ ggplot() +
                         values = c("solid", "dashed", "dotted"), 
                         labels = c("estimated", "true", "hyperparameter"), 
                         name = "distribution") + # 凡例の表示用
-  guides(fill = "none", 
-         linetype = guide_legend(override.aes = linetype_lt)) + # 凡例の体裁
+  guides(linetype = guide_legend(override.aes = linetype_lt)) + # 凡例の体裁
   labs(title = "word distribution (maximum a posteriori estimation)", 
        subtitle = parse(text = param_label), 
        x = expression(vocabulary ~ (v)), 
        y = expression(probability ~ (phi[v])))
 
 
-# データ数と推定値の関係 -------------------------------------------------------------------
+# 推定への影響の可視化 --------------------------------------------------------------
+
+### ・ハイパーパラメータの影響 -----
+
+# フレーム数を指定
+frame_num <- 101
+
+# ハイパーパラメータの範囲を指定
+beta_vals <- seq(from = 0, to = 100, length.out = frame_num)
+
+
+# 推定した単語分布を格納
+anim_phi_df <- tidyr::expand_grid(
+  frame_i = 1:frame_num, 
+  v       = 1:V
+) |> # 全ての組み合わせを作成
+  dplyr::mutate(
+    beta = beta_vals[frame_i], 
+    prob = (N_v + beta - 1) / (N + V * (beta - 1)), 
+    .by = frame_i
+  )
+
+# ハイパーパラメータによる基準値を格納
+anim_beta_df <- tidyr::expand_grid(
+  frame_i = 1:frame_num, 
+  v       = 1:V
+) |> # 全ての組み合わせを作成
+  dplyr::mutate(
+    beta = beta_vals[frame_i], 
+    base = (beta - 1) / (N + V * (beta - 1))
+  )
+
+# ラベル用の文字列を作成
+anim_label_df <- tibble::tibble(
+  frame_i = 1:frame_num, 
+  beta = beta_vals, 
+  KL = anim_phi_df |> 
+    dplyr::reframe(
+      KL = sum(true_phi_v * (log(true_phi_v) - log(prob))),  .by = frame_i # 真のパラメータとのKL情報量を計算
+    ) |> 
+    dplyr::pull(KL), 
+  label = paste0(
+    "list(", 
+    "beta == ", beta, ", ", 
+    "N == ", N, ", ", 
+    "KL(list(phi[truth], phi[MAP])) == ", round(KL, digits = 5), 
+    ")"
+  )
+)
+
+
+# 単語分布のアニメーションを作図
+anim <- ggplot() + 
+  geom_bar(data = anim_phi_df, 
+           mapping = aes(x = v, y = prob, fill = factor(v), linetype = "estimated"), 
+           stat = "identity", show.legend = FALSE) + # 推定した分布
+  ggpattern::geom_bar_pattern(
+    data = anim_beta_df, 
+    mapping = aes(x = v, y = base, linetype = "hyparam"), stat = "identity", 
+    fill = NA, color = "navyblue", pattern_fill = "navyblue", pattern_color = NA, 
+    pattern = "crosshatch", pattern_density  = 0.05, pattern_spacing  = 0.08
+  ) + # ハイパラによる基準値
+  geom_bar(data = true_phi_df, 
+           mapping = aes(x = v, y = prob, linetype = "true"), 
+           stat = "identity", show.legend = FALSE, 
+           fill = NA, color = "red", linewidth = 1) + # 真の分布
+  geom_text(data = anim_label_df, 
+            mapping = aes(x = -Inf, y = Inf, label = label), 
+            parse = TRUE, hjust = 0, vjust = -0.5) + # データ数ラベル:(subtitleの代用)
+  gganimate::transition_manual(frames = frame_i) + # フレーム制御
+  scale_linetype_manual(breaks = c("estimated", "true", "hyparam"), 
+                        values = c("solid", "dashed", "dotted"), 
+                        labels = c("estimated", "true", "hyperparameter"), 
+                        name = "distribution") + # 凡例の表示用
+  coord_cartesian(clip = "off") + # (ラベル表示用の設定)
+  guides(linetype = guide_legend(override.aes = linetype_lt)) + 
+  labs(title = "word distribution (maximum a posteriori estimation)", 
+       subtitle = "", # (ラベル表示用の空行)
+       x = expression(vocabulary ~ (v)), 
+       y = expression(probability ~ (phi[v])))
+
+# 動画を作成
+gganimate::animate(
+  plot = anim, nframes = frame_num, fps = 10, width = 8, height = 6, units = "in", res = 100, 
+  renderer = gganimate::av_renderer(file = "figure/ch2/ch2_4/word_dist_beta.mp4")
+)
+
+
+# KL情報量の推移の作図
+ggplot() + 
+  geom_line(data = anim_label_df, 
+            mapping = aes(x = beta, y = KL), na.rm = TRUE) + # KL情報量
+  labs(title = "KL divergence (maximum likelihood estimation)", 
+       x = expression(hyperparameter ~ (beta)), 
+       y = expression(value ~ (KL(list(phi[truth], phi[MAP])))))
+
+
+### ・データ数の影響 -----
 
 # 文書ごとに単語集合を作成
 w_lt <- list() # リストを初期化
@@ -211,14 +308,15 @@ anim_w_df <- tibble::tibble(
     dplyr::pull(KL), 
   label = paste0(
     "list(", 
+    "beta == ", beta, ", ", 
     "N == ", i, ", ", 
-    "KL(list(phi^{truth}, phi^{MAP})) == ", round(KL, digits = 5), 
+    "KL(list(phi[truth], phi[MAP])) == ", round(KL, digits = 5), 
     ")"
   )
 )
 
 
-# 単語分布の推移のアニメーションを作図
+# 単語分布のアニメーションを作図
 anim <- ggplot() + 
   geom_bar(data = anim_phi_df, 
            mapping = aes(x = v, y = prob, fill = factor(v), linetype = "estimated"), 
@@ -245,8 +343,7 @@ anim <- ggplot() +
                         labels = c("estimated", "true", "hyperparameter"), 
                         name = "distribution") + # 凡例の表示用
   coord_cartesian(clip = "off") + # (ラベル表示用の設定)
-  guides(fill = "none", 
-         linetype = guide_legend(override.aes = linetype_lt)) + 
+  guides(linetype = guide_legend(override.aes = linetype_lt)) + 
   labs(title = "word distribution (maximum a posteriori estimation)", 
        subtitle = "", # (ラベル表示用の空行)
        x = expression(vocabulary ~ (v)), 
@@ -255,7 +352,7 @@ anim <- ggplot() +
 # 動画を作成
 gganimate::animate(
   plot = anim, nframes = N+1, fps = 10, width = 8, height = 6, units = "in", res = 100, 
-  renderer = gganimate::av_renderer(file = "figure/ch2/ch2_4_word_dist.mp4")
+  renderer = gganimate::av_renderer(file = "figure/ch2/ch2_4/word_dist_N.mp4")
 )
 
 
@@ -265,6 +362,6 @@ ggplot() +
             mapping = aes(x = i, y = KL), na.rm = TRUE) + # KL情報量
   labs(title = "KL divergence (maximum likelihood estimation)", 
        x = expression(number~of~data ~ (N)), 
-       y = expression(value ~ (KL(list(phi^{truth}, phi^{MAP})))))
+       y = expression(value ~ (KL(list(phi[truth], phi[MAP])))))
 
 
