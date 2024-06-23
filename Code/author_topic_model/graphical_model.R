@@ -36,7 +36,7 @@ graph <- DiagrammeR::grViz("
       label    = 'D'
       fontsize = 14
       
-      a [label = 'a@_{d}', style = filled, filledcolor = gray]
+      a [label = <<B>a</B>@_{-d}>, style = filled, filledcolor = gray]
       
       subgraph cluster_n{
         label    = 'N@_{d}'
@@ -62,7 +62,7 @@ graph <- DiagrammeR::grViz("
   }
 ")
 
-## ( `{'k}` は書き出し時にφ,ψの添字が重なってしまう対策用の小細工)
+## ( `{'k}, {-d}` は書き出し時にφ,ψ,aの添字が重なってしまう対策用の小細工)
 
 # グラフを書出
 DiagrammeRsvg::export_svg(gv = graph) |> # svgファイルに変換

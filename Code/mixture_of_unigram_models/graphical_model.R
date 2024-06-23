@@ -58,7 +58,7 @@ graph <- DiagrammeR::grViz("
 DiagrammeRsvg::export_svg(gv = graph) |> # svgファイルに変換
   charToRaw() |> 
   rsvg::rsvg(height = 500) |> # ビットマップに変換
-  png::writePNG(target = "figure/graphical_model/mixunigram_model_non_hyparam.png", dpi = 100) # pngファイルに変換
+  png::writePNG(target = "figure/graphical_model/mixture_of_unigram_models_non_hyparam.png", dpi = 100) # pngファイルに変換
 
 
 ### ・事前分布ありの場合 -----
@@ -110,6 +110,6 @@ graph <- DiagrammeR::grViz("
 DiagrammeRsvg::export_svg(gv = graph) |> # svgファイルに変換
   charToRaw() |> 
   rsvg::rsvg(height = 500) |> # ビットマップに変換
-  png::writePNG(target = "figure/graphical_model/mixunigram_model.png", dpi = 100) # pngファイルに変換
+  png::writePNG(target = "figure/graphical_model/mixture_of_unigram_models.png", dpi = 100) # pngファイルに変換
 
 
