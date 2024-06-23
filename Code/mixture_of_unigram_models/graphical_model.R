@@ -16,27 +16,33 @@ library(DiagrammeRsvg)
 # 混合ユニグラムモデル(事前分布なし)のグラフィカルモデルを作図
 graph <- DiagrammeR::grViz("
   digraph dot{
-    graph [rankdir = LR, 
-           label = 'mixture of unigram model', labelloc = 't', fontsize = 20]
+    label    = 'mixture of unigram models'
+    labelloc = t
+    fontsize = 20
+    
+    graph [rankdir = LR]
     node  [shape = circle, fixedsize = ture, fontname = 'Times-Italic']
     edge []
     
     theta [label = <<B>&theta;</B>>]
     
     subgraph cluster_d{
-      label = 'D'
+      label    = 'D'
+      fontsize = 14
       
       z [label = 'z@_{d}']
       
       subgraph cluster_n{
-        label = 'N@_{d}'
+        label    = 'N@_{d}'
+        fontsize = 14
         
-        w [label = 'w@_{dn}', style = filled, filledcolor = 'gray']
+        w [label = 'w@_{dn}', style = filled, filledcolor = gray]
       }
     }
     
     subgraph cluster_k{
-      label = 'K'
+      label    = 'K'
+      fontsize = 14
       
       phi [label = <<B>&phi;</B>@_{'k}>]
     }
@@ -60,8 +66,11 @@ DiagrammeRsvg::export_svg(gv = graph) |> # svgファイルに変換
 # 混合ユニグラムモデルのグラフィカルモデルを作図
 graph <- DiagrammeR::grViz("
   digraph dot{
-    graph [rankdir = LR, 
-           label = 'mixture of unigram model', labelloc = 't', fontsize = 20]
+    label    = 'mixture of unigram models'
+    labelloc = t
+    fontsize = 20
+    
+    graph [rankdir = LR]
     node  [shape = circle, fixedsize = ture, fontname = 'Times-Italic']
     edge  []
     
@@ -70,26 +79,28 @@ graph <- DiagrammeR::grViz("
     theta [label = <<B>&theta;</B>>]
     
     subgraph cluster_d{
-      label = 'D'
+      label    = 'D'
+      fontsize = 14
       
       z [label = 'z@_{d}']
       
       subgraph cluster_n{
-        label = 'N@_{d}'
+        label    = 'N@_{d}'
+        fontsize = 14
         
-        w [label = 'w@_{dn}', style = filled, filledcolor = 'gray']
+        w [label = 'w@_{dn}', style = filled, filledcolor = gray]
       }
     }
     
     subgraph cluster_k{
-      label = 'K'
+      label    = 'K'
+      fontsize = 14
       
       phi [label = <<B>&phi;</B>@_{'k}>]
     }
     
     alpha -> theta -> z -> w;
-    w -> phi[dir = back];
-    phi -> beta[dir = back];
+    w -> phi -> beta[dir = back];
   }
 ")
 

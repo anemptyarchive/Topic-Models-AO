@@ -14,8 +14,11 @@ library(DiagrammeRsvg)
 # ノイズあり対応トピックモデルのグラフィカルモデルを作図
 graph <- DiagrammeR::grViz("
   digraph dot{
-    graph [rankdir = LR, newrank = true, 
-           label = 'noisy correspondence topic model', labelloc = 't', fontsize = 20]
+    label    = 'noisy correspondence topic model'
+    labelloc = t
+    fontsize = 20
+    
+    graph [rankdir = LR, newrank = true]
     node  [shape = circle, fixedsize = ture, fontname = 'Times-Italic']
     edge  []
     
@@ -27,34 +30,39 @@ graph <- DiagrammeR::grViz("
     lambda [label = '&lambda;']
     
     subgraph cluster_d{
-      label = 'D'
+      label    = 'D'
+      fontsize = 14
       
       theta [label = <<B>&theta;</B>@_{d}>]
       
       subgraph cluster_n{
-        label = 'N@_{d}'
+        label    = 'N@_{d}'
+        fontsize = 14
         
         z [label = 'z@_{dn}']
-        w [label = 'w@_{dn}', style = filled, filledcolor = 'gray']
+        w [label = 'w@_{dn}', style = filled, filledcolor = gray]
       }
       
       subgraph cluster_m{
-        label = 'M@_{d}'
+        label    = 'M@_{d}'
+        fontsize = 14
         
         y [label = 'y@_{dm}']
         r [label = 'r@_{dm}']
-        x [label = 'x@_{dm}', style = filled, filledcolor = 'gray']
+        x [label = 'x@_{dm}', style = filled, filledcolor = gray]
       }
     }
     
     subgraph cluster_k{
-      label = 'K'
+      label    = 'K'
+      fontsize = 14
       
       phi [label = <<B>&phi;</B>@_{'k}>]
     }
     
     subgraph cluster_k1{
-      label = 'K+1'
+      label    = 'K+1'
+      fontsize = 14
       
       psi [label = <<B>&psi;</B>@_{'k}>]
     }
@@ -62,12 +70,9 @@ graph <- DiagrammeR::grViz("
     {rank = same; z; y; r}
     
     alpha -> theta -> z -> {w, y};
-    w -> phi[dir = back];
-    phi -> beta[dir = back];
+    w -> phi -> beta [dir = back];
     eta -> lambda -> r;
-    {y, r} -> x;
-    x -> psi[dir = back];
-    psi -> gamma[dir = back];
+    {y, r} -> x -> psi -> gamma [dir = back];
   }
 ")
 

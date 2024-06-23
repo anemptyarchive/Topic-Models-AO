@@ -14,8 +14,11 @@ library(DiagrammeRsvg)
 # 著者トピックモデルのグラフィカルモデルを作図
 graph <- DiagrammeR::grViz("
   digraph dot{
-    graph [rankdir = LR, 
-           label = 'author topic model', labelloc = 't', fontsize = 20]
+    label    = 'author topic model'
+    labelloc = t
+    fontsize = 20
+    
+    graph [rankdir = LR]
     node  [shape = circle, fixedsize = ture, fontname = 'Times-Italic']
     edge  []
     
@@ -23,27 +26,31 @@ graph <- DiagrammeR::grViz("
     beta  [label = <<B>&beta;</B>>]
     
     subgraph cluster_s{
-      label = 'S'
+      label    = 'S'
+      fontsize = 14
       
       theta [label = <<B>&theta;</B>@_{s}>]
     }
     
     subgraph cluster_d{
-      label = 'D'
+      label    = 'D'
+      fontsize = 14
       
-      a [label = 'a@_{d}', style = filled, filledcolor = 'gray']
+      a [label = 'a@_{d}', style = filled, filledcolor = gray]
       
       subgraph cluster_n{
-        label = 'N@_{d}'
+        label    = 'N@_{d}'
+        fontsize = 14
         
         y [label = 'y@_{dn}']
         z [label = 'z@_{dn}']
-        w [label = 'w@_{dn}', style = filled, filledcolor = 'gray']
+        w [label = 'w@_{dn}', style = filled, filledcolor = gray]
       }
     }
     
     subgraph cluster_k{
-      label = 'K'
+      label    = 'K'
+      fontsize = 14
       
       phi [label = <<B>&phi;</B>@_{'k}>]
     }
@@ -51,8 +58,7 @@ graph <- DiagrammeR::grViz("
     alpha -> theta;
     a -> y
     {theta, y} -> z -> w;
-    w -> phi [dir = back];
-    phi -> beta [dir = back];
+    w -> phi -> beta [dir = back];
   }
 ")
 
