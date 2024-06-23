@@ -16,34 +16,33 @@ library(DiagrammeRsvg)
 # 混合ユニグラムモデル(事前分布なし)のグラフィカルモデルを作図
 graph <- DiagrammeR::grViz("
   digraph dot{
-    graph [rankdir = LR]
-    node  [shape = circle]
-      
+    graph [rankdir = LR, 
+           label = 'mixture of unigram model', labelloc = 't', fontsize = 20]
+    node  [shape = circle, fixedsize = ture, fontname = 'Times-Italic']
+    edge []
+    
     theta [label = <<B>&theta;</B>>]
     
-    subgraph cluster_D{
-      label = D
+    subgraph cluster_d{
+      label = 'D'
       
       z [label = 'z@_{d}']
       
-      subgraph cluster_N{
+      subgraph cluster_n{
         label = 'N@_{d}'
         
         w [label = 'w@_{dn}', style = filled, filledcolor = 'gray']
       }
     }
     
-    edge []
-      theta -> z -> w;
-    
-    subgraph cluster_K{
-      label = K
+    subgraph cluster_k{
+      label = 'K'
       
       phi [label = <<B>&phi;</B>@_{'k}>]
     }
     
-    edge []
-      phi -> w;
+    theta -> z -> w;
+    w -> phi[dir = back];
   }
 ")
 
@@ -52,46 +51,45 @@ graph <- DiagrammeR::grViz("
 # グラフを書出
 DiagrammeRsvg::export_svg(gv = graph) |> # svgファイルに変換
   charToRaw() |> 
-  rsvg::rsvg(height = 1000) |> # ビットマップに変換
-  png::writePNG(target = "figure/graphical_model/mixunigram_model.png", dpi = 100) # pngファイルに変換
+  rsvg::rsvg(height = 500) |> # ビットマップに変換
+  png::writePNG(target = "figure/graphical_model/mixunigram_model_non_hyparam.png", dpi = 100) # pngファイルに変換
 
 
 ### ・事前分布ありの場合 -----
 
-# 混合ユニグラムモデル(事前分布あり)のグラフィカルモデルを作図
+# 混合ユニグラムモデルのグラフィカルモデルを作図
 graph <- DiagrammeR::grViz("
   digraph dot{
-    graph [rankdir = LR]
-    node  [shape = circle]
+    graph [rankdir = LR, 
+           label = 'mixture of unigram model', labelloc = 't', fontsize = 20]
+    node  [shape = circle, fixedsize = ture, fontname = 'Times-Italic']
+    edge  []
     
     alpha [label = <<B>&alpha;</B>>]
+    beta  [label = <<B>&beta;</B>>]
     theta [label = <<B>&theta;</B>>]
     
-    subgraph cluster_D{
-      label = D
+    subgraph cluster_d{
+      label = 'D'
       
       z [label = 'z@_{d}']
       
-      subgraph cluster_N{
+      subgraph cluster_n{
         label = 'N@_{d}'
         
         w [label = 'w@_{dn}', style = filled, filledcolor = 'gray']
       }
     }
     
-    edge []
-      alpha -> theta -> z -> w;
-    
-    beta [label = <<B>&beta;</B>>]
-    
-    subgraph cluster_K{
-      label = K
+    subgraph cluster_k{
+      label = 'K'
       
       phi [label = <<B>&phi;</B>@_{'k}>]
     }
     
-    edge []
-      beta -> phi -> w;
+    alpha -> theta -> z -> w;
+    w -> phi[dir = back];
+    phi -> beta[dir = back];
   }
 ")
 
@@ -100,7 +98,7 @@ graph <- DiagrammeR::grViz("
 # グラフを書出
 DiagrammeRsvg::export_svg(gv = graph) |> # svgファイルに変換
   charToRaw() |> 
-  rsvg::rsvg(height = 1000) |> # ビットマップに変換
-  png::writePNG(target = "figure/graphical_model/mixunigram_model_prior.png", dpi = 100) # pngファイルに変換
+  rsvg::rsvg(height = 500) |> # ビットマップに変換
+  png::writePNG(target = "figure/graphical_model/mixunigram_model.png", dpi = 100) # pngファイルに変換
 
 

@@ -16,23 +16,58 @@ library(DiagrammeRsvg)
 # ユニグラムモデル(事前分布なし)のグラフィカルモデルを作図
 graph <- DiagrammeR::grViz("
   digraph dot{
-    graph [rankdir = LR]
-    node  [shape = circle]
+    graph [rankdir = LR, 
+           label = 'unigram model', labelloc = 't', fontsize = 20]
+    node  [shape = circle, fixedsize = ture, fontname = 'Times-Italic']
+    edge  []
     
     phi [label = <<B>&phi;</B>>]
     
-    subgraph cluster_D{
-      label = D
+    subgraph cluster_d{
+      label = 'D'
       
-      subgraph cluster_N{
+      subgraph cluster_n{
         label = 'N@_{d}'
         
         w [label = 'w@_{dn}', style = filled, filledcolor = 'gray']
       }
     }
     
-    edge []
-      phi -> w;
+    phi -> w;
+  }
+")
+
+# グラフを書出
+DiagrammeRsvg::export_svg(gv = graph) |> # svgファイルに変換
+  charToRaw() |> 
+  rsvg::rsvg(height = 500) |> # ビットマップに変換
+  png::writePNG(target = "figure/graphical_model/unigram_model_non_hyparam.png", dpi = 100) # pngファイルに変換
+
+
+### ・事前分布ありの場合 -----
+
+# ユニグラムモデルのグラフィカルモデルを作図
+graph <- DiagrammeR::grViz("
+  digraph dot{
+    graph [rankdir = LR, 
+           label = 'unigram model', labelloc = 't', fontsize = 20]
+    node  [shape = circle, fixedsize = ture, fontname = 'Times-Italic']
+    edge  []
+    
+    beta [label = <<B>&beta;</B>>]
+    phi  [label = <<B>&phi;</B>>]
+    
+    subgraph cluster_d{
+      label = 'D'
+      
+      subgraph cluster_n{
+        label = 'N@_{d}'
+        
+        w [label = 'w@_{dn}', style = filled, filledcolor = 'gray']
+      }
+    }
+    
+    beta -> phi -> w
   }
 ")
 
@@ -41,38 +76,5 @@ DiagrammeRsvg::export_svg(gv = graph) |> # svgファイルに変換
   charToRaw() |> 
   rsvg::rsvg(height = 500) |> # ビットマップに変換
   png::writePNG(target = "figure/graphical_model/unigram_model.png", dpi = 100) # pngファイルに変換
-
-
-### ・事前分布ありの場合 -----
-
-# ユニグラムモデル(事前分布あり)のグラフィカルモデルを作図
-graph <- DiagrammeR::grViz("
-  digraph dot{
-    graph [rankdir = LR]
-    node  [shape = circle]
-    
-    beta [label = <<B>&beta;</B>>]
-    phi  [label = <<B>&phi;</B>>]
-    
-    subgraph cluster_D{
-      label = D
-      
-      subgraph cluster_N{
-        label = 'N@_{d}'
-        
-        w [label = 'w@_{dn}', style = filled, filledcolor = 'gray']
-      }
-    }
-
-    edge []
-      beta -> phi -> w
-  }
-")
-
-# グラフを書出
-DiagrammeRsvg::export_svg(gv = graph) |> # svgファイルに変換
-  charToRaw() |> 
-  rsvg::rsvg(height = 500) |> # ビットマップに変換
-  png::writePNG(target = "figure/graphical_model/unigram_model_prior.png", dpi = 100) # pngファイルに変換
 
 
