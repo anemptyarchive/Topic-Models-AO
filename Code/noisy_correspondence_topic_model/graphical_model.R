@@ -70,9 +70,10 @@ graph <- DiagrammeR::grViz("
     {rank = same; z; y; r}
     
     alpha -> theta -> z -> {w, y};
-    w -> phi -> beta [dir = back];
     eta -> lambda -> r;
-    {y, r} -> x -> psi -> gamma [dir = back];
+    {y, r} -> x;
+    w -> phi -> beta [dir = back];
+    x -> psi -> gamma [dir = back];
   }
 ")
 
