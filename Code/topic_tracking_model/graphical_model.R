@@ -16,7 +16,7 @@ graph <- DiagrammeR::grViz("
   digraph dot{
     
     graph [rankdir = LR, newrank = true]
-    node  [shape = circle, fixedsize = ture, fontname = 'Times-Italic']
+    node  [shape = circle, fixedsize = ture, height = 0.6, fontname = 'Times-Italic']
     edge  []
     
     subgraph cluster_t_fin{

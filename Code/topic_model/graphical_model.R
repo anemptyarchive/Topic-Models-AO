@@ -21,7 +21,7 @@ graph <- DiagrammeR::grViz("
     fontsize = 20
     
     graph [rankdir = LR]
-    node  [shape = circle, fixedsize = ture, fontname = 'Times-Italic']
+    node  [shape = circle, fixedsize = ture, height = 0.6, fontname = 'Times-Italic']
     edge  []
     
     subgraph cluster_d{
@@ -70,7 +70,7 @@ graph <- DiagrammeR::grViz("
     fontsize = 20
     
     graph [rankdir = LR]
-    node  [shape = circle, fixedsize = ture, fontname = 'Times-Italic']
+    node  [shape = circle, fixedsize = ture, height = 0.6, fontname = 'Times-Italic']
     edge  []
     
     alpha [label = <<B>&alpha;</B>>]

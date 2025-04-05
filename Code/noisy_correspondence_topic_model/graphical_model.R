@@ -19,13 +19,13 @@ graph <- DiagrammeR::grViz("
     fontsize = 20
     
     graph [rankdir = LR, newrank = true]
-    node  [shape = circle, fixedsize = ture, fontname = 'Times-Italic']
+    node  [shape = circle, fixedsize = ture, height = 0.6, fontname = 'Times-Italic']
     edge  []
     
     alpha [label = <<B>&alpha;</B>>]
     beta  [label = <<B>&beta;</B>>]
     gamma [label = <<B>&gamma;</B>>]
-    eta   [label = <<B>&eta;</B>>]
+    eta   [label = '&eta;']
     
     lambda [label = '&lambda;']
     
