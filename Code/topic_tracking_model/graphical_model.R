@@ -29,10 +29,11 @@ graph <- DiagrammeR::grViz("
       theta_fin -> phi_fin [penwidth = 0, dir = none];
     }
     
+    alpha [label = '&alpha;@_{d}@^{(t)}']
+    
     subgraph cluster_d{
       label = 'D'
       
-      alpha [label = <<B>&alpha;</B>@_{d}@^{(t)}>]
       theta [label = <<B>&theta;</B>@_{d}@^{(t)}>]
       
       subgraph cluster_n{
@@ -43,18 +44,20 @@ graph <- DiagrammeR::grViz("
       }
     }
     
+    beta [label = '&beta;@_{k}@^{(t)}']
+    
     subgraph cluster_k{
       label     = 'K'
       labeljust = r
       
-      beta  [label = <<B>&beta;</B>@_{k}@^{(t)}>]
       phi [label = <<B>&phi;</B>@_{'k}@^{(t)}>]
     }
+    
+    alpha_old [label = '&alpha;@_{d}@^{(t-1)}']
     
     subgraph cluster_d_old{
       label = 'D'
       
-      alpha_old [label = <<B>&alpha;</B>@_{d}@^{(t-1)}>]
       theta_old [label = <<B>&theta;</B>@_{d}@^{(t-1)}>]
       
       subgraph cluster_n_old{
@@ -65,11 +68,12 @@ graph <- DiagrammeR::grViz("
       }
     }
     
+    beta_old [label = '&beta;@_{k}@^{(t-1)}']
+    
     subgraph cluster_k_old{
       label     = 'K'
       labeljust = r
       
-      beta_old  [label = <<B>&beta;</B>@_{k}@^{(t-1)}>]
       phi_old [label = <<B>&phi;</B>@_{'k}@^{(t-1)}>]
     }
     
