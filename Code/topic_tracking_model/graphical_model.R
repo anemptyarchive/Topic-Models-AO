@@ -31,11 +31,11 @@ graph <- DiagrammeR::grViz("
       theta_fin -> phi_fin [penwidth = 0, dir = none];
     }
     
-    alpha [label = '&alpha;@_{d}@^{(t)}']
     
     subgraph cluster_d{
       label = 'D'
       
+      alpha [label = '&alpha;@_{d}@^{(t)}']
       theta [label = <<B>&theta;</B>@_{d}@^{(t)}>]
       
       subgraph cluster_n{
@@ -46,20 +46,18 @@ graph <- DiagrammeR::grViz("
       }
     }
     
-    beta [label = '&beta;@_{k}@^{(t)}']
-    
     subgraph cluster_k{
-      label     = 'K'
-      labeljust = r
+      label = 'K'
       
+      beta [label = '&beta;@_{k}@^{(t)}']
       phi [label = <<B>&phi;</B>@_{'k}@^{(t)}>]
     }
     
-    alpha_old [label = '&alpha;@_{d}@^{(t-1)}']
     
     subgraph cluster_d_old{
       label = 'D'
       
+      alpha_old [label = '&alpha;@_{d}@^{(t-1)}']
       theta_old [label = <<B>&theta;</B>@_{d}@^{(t-1)}>]
       
       subgraph cluster_n_old{
@@ -70,12 +68,11 @@ graph <- DiagrammeR::grViz("
       }
     }
     
-    beta_old [label = '&beta;@_{k}@^{(t-1)}']
     
     subgraph cluster_k_old{
-      label     = 'K'
-      labeljust = r
+      label = 'K'
       
+      beta_old [label = '&beta;@_{k}@^{(t-1)}']
       phi_old [label = <<B>&phi;</B>@_{'k}@^{(t-1)}>]
     }
     
@@ -143,12 +140,11 @@ graph <- DiagrammeR::grViz("
     subgraph cluster_t_dummy{
       color = 'white'
       
-      alpha_t [label = '&alpha;@_{d}@^{(t)}']
-      
       subgraph cluster_d_t{
         label = 'D'
         color = 'black'
         
+        alpha_t [label = '&alpha;@_{d}@^{(t)}']
         theta_t [label = <<B>&theta;</B>@_{d}@^{(t)}>]
         
         subgraph cluster_n_t{
@@ -160,13 +156,11 @@ graph <- DiagrammeR::grViz("
         }
       }
       
-      beta_t [label = '&beta;@_{k}@^{(t)}']
-      
       subgraph cluster_k_t{
-        label     = 'K'
-        labeljust = r
+        label = 'K'
         color = 'black'
         
+        beta_t [label = '&beta;@_{k}@^{(t)}']
         phi_t [label = <<B>&phi;</B>@_{'k}@^{(t)}>]
       }
     }
@@ -174,12 +168,11 @@ graph <- DiagrammeR::grViz("
     subgraph cluster_t1_dummy{
       color = 'white'
       
-      alpha_t1 [label = '&alpha;@_{d}@^{(t-1)}']
-      
       subgraph cluster_d_t1{
         label = 'D'
         color = 'black'
         
+        alpha_t1 [label = '&alpha;@_{d}@^{(t-1)}']
         theta_t1 [label = <<B>&theta;</B>@_{d}@^{(t-1)}>]
         
         subgraph cluster_n_t1{
@@ -191,13 +184,11 @@ graph <- DiagrammeR::grViz("
         }
       }
       
-      beta_t1 [label = '&beta;@_{k}@^{(t-1)}']
-      
       subgraph cluster_k_t1{
-        label     = 'K'
-        labeljust = r
+        label = 'K'
         color = 'black'
         
+        beta_t1 [label = '&beta;@_{k}@^{(t-1)}']
         phi_t1 [label = <<B>&phi;</B>@_{'k}@^{(t-1)}>]
       }
     }
@@ -206,12 +197,11 @@ graph <- DiagrammeR::grViz("
     subgraph cluster_t2_dummy{
       color = 'white'
       
-      alpha_t2 [label = '&alpha;@_{d}@^{(t-2)}']
-      
       subgraph cluster_d_t2{
         label = 'D'
         color = 'black'
         
+        alpha_t2 [label = '&alpha;@_{d}@^{(t-2)}']
         theta_t2 [label = <<B>&theta;</B>@_{d}@^{(t-2)}>]
         
         subgraph cluster_n_t2{
@@ -223,13 +213,11 @@ graph <- DiagrammeR::grViz("
         }
       }
       
-      beta_t2 [label = '&beta;@_{k}@^{(t-2)}']
-      
       subgraph cluster_k_t2{
-        label     = 'K'
-        labeljust = r
+        label = 'K'
         color = 'black'
         
+        beta_t2 [label = '&beta;@_{k}@^{(t-2)}']
         phi_t2 [label = <<B>&phi;</B>@_{'k}@^{(t-2)}>]
       }
     }
